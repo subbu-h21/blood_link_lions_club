@@ -188,6 +188,45 @@ Two more surfaced during decomposition that PRD.md §15 doesn't cover:
   privileges in schema public grant ... to service_role` so every table a
   later unit's migration creates is covered automatically — Units 07,
   16, 33, 46 should not need to repeat this.
+- **`getClaims()` does not carry `profiles.role` — a custom access token
+  hook does (Unit 05 migration, `custom_access_token_hook`):** the Auth
+  JWT has no idea about application data. The hook injects
+  `app_metadata.profile_role` at token issuance/refresh, so
+  `lib/supabase/proxy.ts`'s role gate reads it for free with zero
+  per-request database round-trips. **The function must be `security
+  definer`** — `profiles` has RLS enabled with zero policies (Unit 04's
+  deliberate backstop), so `supabase_auth_admin`'s own `GRANT SELECT`
+  still gets blocked at the row level; without `security definer` the
+  lookup silently returns no row (not an error) and every session falls
+  back to `role: 'searcher'`. **This was caught, not assumed:** calling
+  the function directly as the `postgres` superuser looked correct
+  (superuser bypasses RLS regardless), which would have hidden the bug —
+  it only showed up decoding a JWT actually issued through the real
+  `/auth/v1/verify` endpoint and comparing it against the database.
+  Consequence for role changes (e.g. Unit 20's searcher→donor upgrade):
+  a session's `profile_role` claim is only as fresh as its last token
+  issuance — bounded by `[auth] jwt_expiry` (3600s locally), refreshed
+  automatically on the normal refresh-token cycle, not instantly on
+  write. Don't build anything that assumes a role change is visible to
+  that user's *current* session immediately.
+- **Two config.toml changes needed a full `supabase stop` + `start`, not
+  `db reset` (Units 04 and 05, hit twice):** `db reset` reapplies
+  migrations and seed data against the *already-running* containers —
+  it does not regenerate their environment variables from `config.toml`.
+  Both the `[auth.sms]` test-OTP/Twilio-placeholder setup and
+  `[auth.hook.custom_access_token]` silently had no effect until a full
+  stop/start cycle. If a `config.toml` change looks like it "didn't
+  work," check `docker inspect <container> --format '{{.Config.Env}}'`
+  for the expected `GOTRUE_*` var before assuming the TOML syntax is
+  wrong — it's more likely the container just hasn't regenerated.
+- **`/donor/register` is deliberately ungated (Unit 05):** it's the
+  entry point an anonymous visitor uses to become a `searcher`, and
+  gating it would block the registration flow Units 03/04 already proved
+  works. The rest of `/donor/*` requires role `donor`; a mismatched or
+  anonymous visitor there is redirected to `/donor/register` specifically
+  (not the generic `/`), since that's the actionable next step for them.
+  `/bank/*` and `/admin/*` mismatches redirect to `/` — there's no
+  bank/admin login page yet to send them to more specifically.
 - **`profiles.full_name` is nullable, not `NOT NULL` as PRD.md §4.2
   literally shows (Unit 04 migration):** a bare phone-verified searcher
   (raising a request, never registering) has no name-collection step
