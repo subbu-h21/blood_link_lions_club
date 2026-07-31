@@ -41,6 +41,13 @@ root, sibling to `frontend/` — it's schema, not app code, and CLAUDE.md's
 Conventions section doesn't nest it under anything. `npm run *` commands are
 run from inside `frontend/`.
 
+**Addition to CLAUDE.md's Conventions:** Unit 03 introduced a top-level
+`components/` folder (`frontend/components/`) for UI shared across portals
+(`components/auth/PhoneOtpFlow.tsx`, `components/i18n/LanguageToggle.tsx`).
+CLAUDE.md's Conventions section never mentions this folder. Treat it as a
+real addition to those conventions, not a one-off: shared, portal-agnostic
+components go there, not duplicated into each portal's route folder.
+
 Since Unit 02 added a root-level `package.json`/`package-lock.json` for db
 tooling, Turbopack mis-inferred the repo root as the workspace root on
 build (picked up the wrong lockfile). Fixed in Unit 03 by pinning
@@ -111,6 +118,21 @@ Two more surfaced during decomposition that PRD.md §15 doesn't cover:
   (`components/i18n/`) lives in the root layout, visible on every portal.
   Every later UI unit should add keys to these same two files and call
   `t("namespace.key")` — never a second dictionary, never inline strings.
+- **Units 19 and 21 have a head start, not a blank page.** Unit 03 already
+  created `frontend/app/donor/register/page.tsx` and
+  `frontend/app/(public)/request/new/page.tsx`, each rendering
+  `<PhoneOtpFlow />` with nothing else on the page yet. Unit 19's D1 (full
+  name/DOB/blood group/PIN/consent) and Unit 21's S4 (blood group/component/
+  units/destination bank/urgency) must **extend these existing files**, not
+  create them fresh — check the file before writing as if it were empty.
+- Unit 02's migration adds two things beyond PRD.md §4's literal schema
+  text: a `region_adjacency_no_self_reference` check constraint (a region
+  can't neighbour itself — PRD.md never says this, it's a sensible
+  default), and indexes on the FK columns queried most (`region_id`,
+  `pincode`). Neither changes any table's shape or column list — later
+  units reading PRD.md §4 and finding extra constraints/indexes in the
+  actual migration should treat that as expected, not a bug to "fix" back
+  to the literal spec.
 - `search_logs` table (Unit 07): PRD.md §6.2 requires "every search logged"
   but §4 never defines its schema. Minimal shape used: region, blood group,
   raw PIN/town input, timestamp. Revisit if retention or PII handling needs
