@@ -24,6 +24,30 @@ out of scope for this task. You should make these edits yourself.
    resets are admin-mediated, not self-service. Units 08–09 and 34–35 were
    written against the CLAUDE.md version. PRD.md §3 and its auth-related
    prose need updating to match.
+2. **Next.js version.** PRD.md §2 (and Unit 01) says "Next.js 15." As of
+   this build, 15 is no longer current — Next.js 16 is. Unit 01 was executed
+   against **Next.js 16.2.12**. PRD.md §2 needs updating to say 16, not 15.
+
+---
+
+## Project layout note
+
+Unit 01 scaffolded the actual Next.js app into **`frontend/`**, not the repo
+root, because the repo root already held `CLAUDE.md`/`PRD.md`/`SPEC.md`/
+`prompts/`/`.git` and `create-next-app` refuses to run in a non-empty
+directory. Every path in every unit below (`app/...`, `lib/...`) is relative
+to `frontend/`. **Exception:** `supabase/migrations/` stays at the repo
+root, sibling to `frontend/` — it's schema, not app code, and CLAUDE.md's
+Conventions section doesn't nest it under anything. `npm run *` commands are
+run from inside `frontend/`.
+
+`npm audit` reports 12 high-severity findings on the fresh scaffold, all in
+transitive build/dev tooling (eslint's `minimatch` chain, and `postcss`/
+`sharp` bundled inside `next` itself for image optimisation) — not something
+this project's code can fix directly. **Do not run `npm audit fix --force`**
+— on this scaffold it proposes downgrading `next` to `9.3.3` and `eslint` to
+`10.8.0`, which would undo this entire unit. Revisit when upstream ships
+patched versions.
 
 ---
 
