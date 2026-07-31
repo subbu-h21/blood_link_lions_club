@@ -27,6 +27,19 @@ out of scope for this task. You should make these edits yourself.
 
 ---
 
+## Blocking on real data
+
+Unit 02 seeds **placeholder geography only** (one region, three PIN codes,
+one blood bank, every value marked `PLACEHOLDER`) so the build isn't stalled
+waiting for it. This is not a code task: it's PIN codes actually in the
+Sirsi area, the blood banks near Sirsi with real addresses/phone numbers,
+and which areas border which — phone calls and an India Post PIN-code
+lookup, per SPEC.md §10 item 3. Until someone (Lions Club, most likely)
+collects this, the app runs on fake data. Swapping it in later is a data
+change to Unit 02's seed script, not a rebuild.
+
+---
+
 ## Open decisions
 
 PRD.md §15 already lists eight decisions owned by the Lions Club (the seven
