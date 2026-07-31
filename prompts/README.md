@@ -41,6 +41,13 @@ root, sibling to `frontend/` — it's schema, not app code, and CLAUDE.md's
 Conventions section doesn't nest it under anything. `npm run *` commands are
 run from inside `frontend/`.
 
+Since Unit 02 added a root-level `package.json`/`package-lock.json` for db
+tooling, Turbopack mis-inferred the repo root as the workspace root on
+build (picked up the wrong lockfile). Fixed in Unit 03 by pinning
+`turbopack.root` in `frontend/next.config.ts` to `frontend/` itself. If a
+later unit sees the same "detected multiple lockfiles" warning return,
+check that setting hasn't been reverted.
+
 `npm audit` reports 12 high-severity findings on the fresh scaffold, all in
 transitive build/dev tooling (eslint's `minimatch` chain, and `postcss`/
 `sharp` bundled inside `next` itself for image optimisation) — not something
@@ -90,6 +97,20 @@ Two more surfaced during decomposition that PRD.md §15 doesn't cover:
 
 ## Implementation notes (not decisions — resolved during decomposition)
 
+- **i18n mechanism (built in Unit 03, reuse — don't reinvent):** no unit
+  explicitly allocated building the `lib/i18n/` machinery CLAUDE.md rule 8
+  requires; Unit 03 needed it first, so it lives there now. One cookie
+  (`locale`, `en`/`kn`) is the single source of truth for both server and
+  client: `lib/i18n/locale.ts`'s `getServerLocale()` reads it in Server
+  Components (e.g. the root layout sets `<html lang>`), and
+  `lib/i18n/LocaleProvider.tsx`'s `useTranslation()` reads it via React
+  context in Client Components. Dictionaries are `lib/i18n/en.ts` /
+  `lib/i18n/kn.ts`, both typed against the `Dictionary` type exported from
+  `en.ts` (not `as const` + `satisfies` — that forces Kannada strings to be
+  literally equal to the English ones, which is wrong). `<LanguageToggle>`
+  (`components/i18n/`) lives in the root layout, visible on every portal.
+  Every later UI unit should add keys to these same two files and call
+  `t("namespace.key")` — never a second dictionary, never inline strings.
 - `search_logs` table (Unit 07): PRD.md §6.2 requires "every search logged"
   but §4 never defines its schema. Minimal shape used: region, blood group,
   raw PIN/town input, timestamp. Revisit if retention or PII handling needs
