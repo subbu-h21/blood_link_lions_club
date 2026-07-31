@@ -256,7 +256,7 @@ otp_expiry = 3600
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
-enable_signup = false
+enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
@@ -264,9 +264,13 @@ template = "Your code is {{ `{{ .Code }}` }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
 max_frequency = "5s"
 
-# Use pre-defined map of phone number to OTP for testing.
-# [auth.sms.test_otp]
-# 4152127777 = "123456"
+# No SMS provider is configured (PRD.md §15 item 6, still undecided - see
+# prompts/README.md "Blocking on real data"). Local dev/testing uses fixed
+# test numbers instead of sending real SMS - swap for a real provider
+# section (e.g. [auth.sms.twilio], enabled = true) once one is chosen.
+[auth.sms.test_otp]
+"+919900000001" = "123456"
+"+919900000002" = "123456"
 
 # Configure logged in session timeouts.
 # [auth.sessions]
@@ -286,10 +290,14 @@ max_frequency = "5s"
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# `enabled = true` here with placeholder credentials is required to flip
+# GOTRUE_EXTERNAL_PHONE_ENABLED on locally - [auth.sms.test_otp] above
+# short-circuits before Twilio's API is ever called, so the placeholder
+# credentials are never actually used. See prompts/README.md.
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
+enabled = true
+account_sid = "test_sid"
+message_service_sid = "test_service_sid"
 # DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
 auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 

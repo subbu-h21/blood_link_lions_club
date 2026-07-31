@@ -19,6 +19,10 @@ export type Dictionary = {
     changeNumber: string;
     successTitle: string;
     successMessage: string;
+    sendError: string;
+    verifyError: string;
+    sending: string;
+    verifying: string;
   };
 };
 
@@ -43,6 +47,10 @@ const en: Dictionary = {
     changeNumber: "Change number",
     successTitle: "Verified",
     successMessage: "Phone number {phone} verified.",
+    sendError: "Could not send the code. Try again.",
+    verifyError: "That code didn't work. Check it and try again.",
+    sending: "Sending...",
+    verifying: "Verifying...",
   },
 };
 

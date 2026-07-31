@@ -1,18 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { ensureProfileAfterVerification } from "@/lib/actions/auth";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 const RESEND_COOLDOWN_SECONDS = 30;
 const PHONE_PATTERN = /^\d{10}$/;
 const OTP_PATTERN = /^\d{6}$/;
+const COUNTRY_CODE = "+91";
 
 type Step = "phone" | "otp" | "success";
 
 /**
  * Shared phone + OTP flow for the searcher (raising a request) and donor
- * (register/log in) portals — CLAUDE.md rule 6, PRD.md §3. Verification is
- * mocked: any 6-digit code succeeds. Real Supabase auth wiring is Unit 04.
+ * (register/log in) portals — CLAUDE.md rule 6, PRD.md §3. Real Supabase
+ * phone-OTP auth (Unit 04) — no SMS provider is configured yet (PRD.md
+ * §15 item 6), so local dev only works for the test numbers in
+ * supabase/config.toml's [auth.sms.test_otp].
  *
  * If `onVerified` is supplied, the caller takes over after verification
  * (e.g. showing a registration or request form in a later unit). If not,
@@ -26,10 +31,11 @@ export function PhoneOtpFlow({
   const { t } = useTranslation();
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
-  const [phoneError, setPhoneError] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
-  const [otpError, setOtpError] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -37,22 +43,46 @@ export function PhoneOtpFlow({
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  function submitPhone() {
+  async function sendOtp() {
     if (!PHONE_PATTERN.test(phone)) {
-      setPhoneError(true);
+      setPhoneError(t("phoneOtp.invalidPhone"));
       return;
     }
-    setPhoneError(false);
+    setPhoneError(null);
+    setPending(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: COUNTRY_CODE + phone,
+    });
+    setPending(false);
+    if (error) {
+      setPhoneError(t("phoneOtp.sendError"));
+      return;
+    }
     setStep("otp");
     setCooldown(RESEND_COOLDOWN_SECONDS);
   }
 
-  function submitOtp() {
+  async function verifyOtp() {
     if (!OTP_PATTERN.test(otp)) {
-      setOtpError(true);
+      setOtpError(t("phoneOtp.invalidOtp"));
       return;
     }
-    setOtpError(false);
+    setOtpError(null);
+    setPending(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      phone: COUNTRY_CODE + phone,
+      token: otp,
+      type: "sms",
+    });
+    if (error) {
+      setPending(false);
+      setOtpError(t("phoneOtp.verifyError"));
+      return;
+    }
+    await ensureProfileAfterVerification();
+    setPending(false);
     if (onVerified) {
       onVerified(phone);
     } else {
@@ -60,9 +90,11 @@ export function PhoneOtpFlow({
     }
   }
 
-  function resend() {
+  async function resend() {
     if (cooldown > 0) return;
     setCooldown(RESEND_COOLDOWN_SECONDS);
+    const supabase = createClient();
+    await supabase.auth.signInWithOtp({ phone: COUNTRY_CODE + phone });
   }
 
   if (step === "phone") {
@@ -81,13 +113,14 @@ export function PhoneOtpFlow({
             className="border rounded px-3 py-2"
           />
         </label>
-        {phoneError && <p className="text-red-600 text-sm">{t("phoneOtp.invalidPhone")}</p>}
+        {phoneError && <p className="text-red-600 text-sm">{phoneError}</p>}
         <button
           type="button"
-          onClick={submitPhone}
-          className="bg-black text-white rounded px-3 py-2"
+          onClick={sendOtp}
+          disabled={pending}
+          className="bg-black text-white rounded px-3 py-2 disabled:opacity-50"
         >
-          {t("phoneOtp.continueButton")}
+          {pending ? t("phoneOtp.sending") : t("phoneOtp.continueButton")}
         </button>
       </div>
     );
@@ -109,13 +142,14 @@ export function PhoneOtpFlow({
             className="border rounded px-3 py-2"
           />
         </label>
-        {otpError && <p className="text-red-600 text-sm">{t("phoneOtp.invalidOtp")}</p>}
+        {otpError && <p className="text-red-600 text-sm">{otpError}</p>}
         <button
           type="button"
-          onClick={submitOtp}
-          className="bg-black text-white rounded px-3 py-2"
+          onClick={verifyOtp}
+          disabled={pending}
+          className="bg-black text-white rounded px-3 py-2 disabled:opacity-50"
         >
-          {t("phoneOtp.verifyButton")}
+          {pending ? t("phoneOtp.verifying") : t("phoneOtp.verifyButton")}
         </button>
         <div className="flex justify-between text-sm">
           <button type="button" onClick={() => setStep("phone")} className="underline">

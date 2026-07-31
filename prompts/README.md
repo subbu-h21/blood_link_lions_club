@@ -27,6 +27,15 @@ out of scope for this task. You should make these edits yourself.
 2. **Next.js version.** PRD.md §2 (and Unit 01) says "Next.js 15." As of
    this build, 15 is no longer current — Next.js 16 is. Unit 01 was executed
    against **Next.js 16.2.12**. PRD.md §2 needs updating to say 16, not 15.
+3. **`middleware.ts` → `proxy.ts`.** As of Next.js **v16.0.0**, the
+   `middleware` file convention is deprecated and renamed to `proxy`
+   (function renamed too: `export function proxy(...)`, Node.js runtime by
+   default now, not Edge). PRD.md §3's "middleware" reference and Unit 05's
+   original text both predate this. Unit 05 has been corrected in place
+   (see its file) to extend `frontend/proxy.ts` / `frontend/lib/supabase/
+   proxy.ts`, created in Unit 04, instead of creating `middleware.ts`. If
+   you ever see `middleware.ts` mentioned in PRD.md or CLAUDE.md, treat it
+   as stale.
 
 ---
 
@@ -76,6 +85,31 @@ lookup, per SPEC.md §10 item 3. Until someone (Lions Club, most likely)
 collects this, the app runs on fake data. Swapping it in later is a data
 change to Unit 02's seed script, not a rebuild.
 
+**No SMS provider is configured either** (PRD.md §15 item 6, still
+undecided — same "Lions Club/project must choose one" status as the real
+geography data). Unit 04 uses `supabase/config.toml`'s
+`[auth.sms.test_otp]` — two fixed local numbers (`+919900000001`,
+`+919900000002`, both OTP `123456`) — so phone-OTP auth is testable without
+real SMS. **Only those two numbers work.** Once a provider (Twilio,
+MSG91, etc.) is chosen, replace `[auth.sms.test_otp]` with the matching
+`[auth.sms.<provider>]` section — this is a config change, not a code
+change; `lib/supabase/client.ts`'s `signInWithOtp`/`verifyOtp` calls don't
+change either way.
+
+**Local-stack quirk found getting `test_otp` working:** setting
+`[auth.sms.test_otp]` alone leaves `GOTRUE_EXTERNAL_PHONE_ENABLED=false` —
+phone auth stays globally off regardless of `test_otp` entries (confirmed
+against the running container's env, not assumed). The CLI seems to
+require an actual provider block set `enabled = true` before it flips that
+flag on, even though `test_otp` short-circuits before that provider is
+ever called. Workaround in `config.toml`: `[auth.sms.twilio]` with
+`enabled = true` and placeholder credentials (`test_sid`/
+`test_service_sid`; `auth_token` still reads from
+`env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)`, export any dummy value before
+`supabase start`/`db reset` or you'll get a harmless "variable is unset"
+warning). If a real provider is configured later, this placeholder block
+gets replaced, not added to.
+
 ---
 
 ## Open decisions
@@ -104,6 +138,63 @@ Two more surfaced during decomposition that PRD.md §15 doesn't cover:
 
 ## Implementation notes (not decisions — resolved during decomposition)
 
+- **`lib/supabase/` vs `lib/db/` (built in Unit 04, reuse — don't
+  reinvent):** CLAUDE.md's Conventions only says "`lib/db/` server-only
+  queries," but auth and data access need different trust levels, so
+  there are two folders, not one:
+  - `lib/supabase/client.ts` / `server.ts` — the **publishable**-key
+    client, session-aware, used only for `auth.*` calls
+    (`signInWithOtp`/`verifyOtp`/`getClaims`) and never for `.from(table)`
+    queries.
+  - `lib/supabase/proxy.ts` (`updateSession`) + root `frontend/proxy.ts` —
+    session-refresh only, no redirects. Unit 05 extends this file for
+    role gating; it is not a new file.
+  - `lib/db/client.ts` — the **secret**-key client (`SUPABASE_SECRET_KEY`,
+    server-only), the *only* thing allowed to query application tables
+    (`profiles`, `donors`, `requests`, etc. as they arrive). Every
+    `lib/db/*.ts` file imports this, never `lib/supabase/*`.
+  Later units doing server-side data access should add a new
+  `lib/db/<table>.ts` file using `createDbClient()` — see
+  `lib/db/profiles.ts`'s `ensureProfile` for the pattern (map snake_case
+  columns to a camelCase type at the boundary, per CLAUDE.md
+  Conventions).
+- **Supabase API key names (Unit 01 used stale ones, corrected in Unit
+  04):** current Supabase projects issue `sb_publishable_*`/`sb_secret_*`
+  keys, not the legacy anon/service_role JWTs. Env vars are
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` — not
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY`, which is
+  what Unit 01's `.env.example` originally had. If either old name shows
+  up in a later unit's draft, that unit is working from stale training
+  data, not this project's actual `.env.example`.
+- **RLS enabled, no policies, on every Unit 02 table (Unit 04
+  migration):** CLAUDE.md rule 1 says RLS is "defence in depth, never the
+  primary access control" — the primary control is that only `lib/db/*`
+  (secret key) touches these tables. RLS-enabled-with-no-policies means a
+  publishable-key client pointed at a table by mistake gets nothing,
+  rather than silently working under a permissive default. Every new
+  table a later unit's migration adds should enable RLS the same way,
+  even with no policies yet. **Verified directly, not assumed:** a raw
+  REST call with the publishable key against `profiles` returns `42501
+  permission denied`, not data.
+- **`service_role` needs explicit table grants too — RLS alone isn't
+  enough (Unit 04 migration):** hit `permission denied for table
+  profiles` (`42501`) from `ensureProfile` against a from-scratch local
+  db, even though the secret key maps to `service_role`, which has
+  `BYPASSRLS`. `BYPASSRLS` skips row-level policies, not the ordinary
+  Postgres table-level GRANT system — Supabase's *hosted* platform sets
+  up default grants for `service_role` automatically; the local CLI
+  stack, starting from a bare migration with no such setup, does not.
+  Fixed by granting existing tables explicitly and adding `alter default
+  privileges in schema public grant ... to service_role` so every table a
+  later unit's migration creates is covered automatically — Units 07,
+  16, 33, 46 should not need to repeat this.
+- **`profiles.full_name` is nullable, not `NOT NULL` as PRD.md §4.2
+  literally shows (Unit 04 migration):** a bare phone-verified searcher
+  (raising a request, never registering) has no name-collection step
+  anywhere in PRD.md's flow — only donor registration (Unit 19/20)
+  collects one. `ensureProfile` (`lib/db/profiles.ts`) creates a
+  `role: 'searcher'` row with `full_name: null` on first verification and
+  never overwrites an existing profile's role on a repeat login.
 - **i18n mechanism (built in Unit 03, reuse — don't reinvent):** no unit
   explicitly allocated building the `lib/i18n/` machinery CLAUDE.md rule 8
   requires; Unit 03 needed it first, so it lives there now. One cookie
