@@ -55,6 +55,14 @@ Violating any of these is a bug regardless of whether the feature works.
 9. **No new infrastructure.** No Redis, no queue service, no search engine. Scheduled work uses `pg_cron`/`pg-boss`. This is maintained by volunteers — every moving part is a liability.
 10. **Write the migration before the UI** for each milestone.
 
+### Rule 1 clarification — Auth service vs data access
+
+Supabase Auth (GoTrue) calls MAY run in the browser: `signInWithOtp`, `verifyOtp`, `signOut`, `getSession`, `onAuthStateChange`. The publishable key is public by design and interactive OTP entry requires browser participation.
+
+Everything else stays server-only: `.from()`, `.rpc()`, `.storage`, and any query touching application data. The service role key never reaches the browser under any circumstance.
+
+The line is the service, not the SDK. Auth API = allowed. PostgREST and Storage = server-only.
+
 ---
 
 ## Domain vocabulary

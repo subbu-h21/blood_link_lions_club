@@ -297,6 +297,47 @@ Two more surfaced during decomposition that PRD.md §15 doesn't cover:
 
 ---
 
+## M1 review outcome (Unit 06)
+
+Two decisions came out of the review, both resolved with you before acting,
+not silently:
+
+1. **Rule 1 clarification, added to CLAUDE.md verbatim:** Supabase Auth
+   (GoTrue) calls — `signInWithOtp`, `verifyOtp`, `signOut`, `getSession`,
+   `onAuthStateChange` — may run in the browser. That's the only way
+   interactive OTP entry works. Everything touching application data
+   (`.from()`, `.rpc()`, `.storage`) stays server-only. The
+   `security-review` skill's `SKILL.md` now states this exception
+   explicitly so `PhoneOtpFlow.tsx`'s `createClient()` calls stop being
+   flagged as a BLOCKER on every future scan.
+2. **`anon`/`authenticated` had `REFERENCES`/`TRIGGER`/`TRUNCATE` on every
+   table (Unit 06 migration `revoke_anon_authenticated_table_grants`):**
+   none of these three expose row data, but `TRUNCATE` bypasses RLS
+   entirely — RLS only governs SELECT/INSERT/UPDATE/DELETE, so Unit 04's
+   RLS-with-no-policies backstop never closed this. Traced to a
+   `pg_default_acl` entry owned by the `postgres` role (the role our
+   migrations run as) that auto-grants these three on every new table in
+   `public` — fixed both the 7 existing tables *and* the default itself,
+   confirmed by creating and dropping a throwaway table and checking its
+   grants came back empty. Without the default-privilege fix this would
+   have recurred at every future milestone's new tables (M2's
+   `bank_stock`/`bank_shortages`, M3's `requests`/`prospects`, etc.).
+   `security-review`'s `SKILL.md` now has a standing check for this so
+   it's caught automatically at every milestone review.
+
+**A correction to an earlier review claim, for the record:** the review
+initially justified the RLS-timing gap (tables created in Unit 02, RLS
+enabled in Unit 04) by claiming Unit 02's migration had "no GRANT
+statements, so default-deny protected the tables." That premise was
+false — the grants above did exist the whole time. The conclusion (no row
+data was ever exposed) still held, but for a narrower reason: none of the
+three granted privileges include SELECT/INSERT/UPDATE/DELETE. Don't trust
+a "no grants exist" claim anywhere in this project without querying
+`information_schema.role_table_grants` directly — it was wrong once
+already.
+
+---
+
 ## M1 — Foundations
 - [ ] 01 — Project scaffold
 - [ ] 02 — Schema + seed geography
