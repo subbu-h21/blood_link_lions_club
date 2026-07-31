@@ -97,6 +97,30 @@ Two more surfaced during decomposition that PRD.md §15 doesn't cover:
 - `donors.consent_at` / `consent_version` (Unit 20): SPEC.md §11.1 requires
   a timestamped, versioned consent record; PRD.md §4.3 doesn't list these
   columns. Added as a small addition to the Unit 20 migration.
+- `app_settings` (Unit 02): CLAUDE.md requires timing parameters to live in
+  a table, "tuned by non-developers," but no SQL for it appears anywhere in
+  PRD.md/SPEC.md. Implemented as a plain key/value store (`key text primary
+  key, value jsonb, description text, updated_at`), seeded with all nine
+  values implied by SPEC.md §5's seven rows (two rows each bundle two
+  values — no-prospect timing splits into normal/emergency, and the
+  auto-expiry row splits into idle-prompt/expiry). Key names:
+  `escalation.no_prospect_normal_minutes`, `escalation.
+  no_prospect_emergency_minutes`, `escalation.admin_inaction_minutes`,
+  `escalation.secondary_inaction_minutes`, `request.idle_prompt_hours`,
+  `request.expiry_hours`, `donor.notif_cap_per_month`, `bank.
+  stock_freshness_hours`, `donor.cooldown_months`. Whoever wires the
+  escalation engine (Unit 44) and cron jobs (Unit 31) should read from
+  these exact keys rather than inventing new ones.
+- Local dev database tooling (Unit 02): a root-level `package.json` (sibling
+  to `frontend/`) holds the Supabase CLI and `pg` as devDependencies, since
+  `supabase/migrations/` lives at the repo root, not inside `frontend/`.
+  `npm run db:migrate` → `supabase migration up --local`; `npm run db:seed`
+  → `scripts/seed.mjs`, which applies `supabase/seed.sql` via `pg` directly
+  (not the Supabase CLI's own seed mechanism) so the same three validation
+  queries run every time, not only on a full `db reset`. Run these from the
+  repo root, not from `frontend/`. Requires Docker Desktop running locally
+  (`supabase start`) — nothing here touches your real hosted Supabase
+  project.
 
 ---
 
