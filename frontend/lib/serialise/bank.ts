@@ -1,5 +1,5 @@
-const DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-type Day = (typeof DAYS)[number];
+export const DAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+export type Day = (typeof DAYS)[number];
 export type OpeningHours = Partial<Record<Day, [string, string]>>;
 
 // Public shape only - policy_notes is admin-visible only (PRD.md §4.4's
