@@ -1,0 +1,17 @@
+-- Unit 26: Wire D4 to real data - "notifies the admin path the same way
+-- Unit 22 signals zero-match" (this unit's own task text).
+--
+-- Not in PRD.md §4.5's literal column list. `admin_notified_at` is NOT
+-- reusable here, same reasoning as Unit 22's zero_match_at: it means an
+-- admin was actually notified, which isn't true yet (no real
+-- notification path exists until Unit 44), and the request's own
+-- `stage` alone isn't enough either - if another prospect is still
+-- accepted/screening on the same request, a single donor cancelling
+-- doesn't move the derived stage at all (syncRequestStageAfterProspectChange
+-- only reverts to finding_prospects when *no* prospect is left live), so
+-- there would be no signal at all for "this specific donor - who the
+-- admin may already be coordinating with - just backed out." Nullable,
+-- same sparse-timestamp convention as admin_notified_at/escalated_at/
+-- resolved_at/zero_match_at - set only when a donor cancels an active
+-- pledge, null otherwise.
+alter table requests add column prospect_cancelled_at timestamptz;

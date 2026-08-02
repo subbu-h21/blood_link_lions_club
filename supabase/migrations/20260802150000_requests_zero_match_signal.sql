@@ -1,0 +1,14 @@
+-- Unit 22: Wire S4 to real data (PRD.md §9.2 "zero donors matched" row).
+--
+-- Not in PRD.md §4.5's literal column list - the task text itself asks
+-- for "whatever minimal signal M4's admin-notify path will read later (a
+-- flag/timestamp on the request is enough)". `admin_notified_at` is NOT
+-- reusable for this - it means an admin was actually notified, which
+-- can't be true yet (no admin UI/notification path exists until Unit
+-- 44), and setting it early would make Unit 44's escalation engine
+-- wrongly skip an already-"notified" request that was never really
+-- notified. Nullable, same convention as every other sparse
+-- timestamp on this table (admin_notified_at, escalated_at,
+-- resolved_at) - set only when lib/db/requests.ts's createRequest finds
+-- zero eligible donors at creation, null otherwise.
+alter table requests add column zero_match_at timestamptz;

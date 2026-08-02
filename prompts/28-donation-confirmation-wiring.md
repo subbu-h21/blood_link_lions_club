@@ -7,6 +7,14 @@
 Read CLAUDE.md first and follow it strictly.
 Relevant: PRD.md §8.2 (rules), §12 Epic 5 (donation-confirmation items),
 CLAUDE.md non-negotiable rule 5.
+**Note (stale, resolved during Unit 17):** PRD.md §7.2's matching order
+("previously reliable donors first") was found to contradict SPEC.md's I8
+("collect the data, don't rank on it yet") and CLAUDE.md's out-of-scope
+list ("donor reliability ranking") — confirmed with the project owner, not
+resolved silently. Unit 17 shipped ranking by least-recently-notified only;
+reliability ranking was deliberately left unbuilt. See prompts/README.md's
+Unit 17 entry (and its Unit-28 flag immediately after) before treating this
+unit's own text below as still accurate on that point.
 
 ## Task
 B3 shows only prospects assigned to the acting bank_staff's own bank, never
@@ -15,13 +23,18 @@ transitions. B4's confirm sets `group_verified_at`, `last_donation_at`, and
 `eligible_from` on the donor — this is the *only* code path in the entire
 codebase permitted to write those three fields. A `rejected` outcome returns
 the request to `finding_prospects` if no other prospect on it is currently
-live; it never penalises the donor's ranking. A `no_show` affects only
-internal reliability ordering (Unit 17's matching engine reads it later),
-never shown to the donor.
+live; it never penalises the donor's ranking. A `no_show` sets
+`prospects.status = 'no_show'` — this is the same data collection Unit
+17 already reads `prospects.status` from, but per the Note above, Unit 17
+does not currently act on it for ordering. Do not add reliability ranking
+to Unit 17 as part of this unit; that would silently reopen a decision
+already confirmed with the project owner. Never shown to the donor either
+way.
 
 ## Read before writing
-Unit 16's `prospects`/`requests` schema. Unit 17's matching engine —
-`no_show` history feeds its ordering; confirm the field names line up. Unit
+Unit 16's `prospects`/`requests` schema. Unit 17's matching engine — read
+it to confirm `prospects.status = 'no_show'` is the field this unit should
+write; do not add reliability-ordering logic to it (see Note above). Unit
 09's bank session, for own-bank scoping. `lib/serialise/`'s shapes from Unit
 07 — B3 is the first unit anywhere in the codebase to expose a donor phone
 number (to the bank that donor is scheduled at, per rule 3 below), so the
