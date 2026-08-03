@@ -1,0 +1,12 @@
+-- Unit 44: PRD.md §9.2's "Secondary inaction -> notify district
+-- coordinator" trigger needs its own idempotency marker, distinct from
+-- `escalated_at` - that column already means "when was the secondary
+-- admin notified" (the trigger condition and idempotency guard for the
+-- *previous* rung, "Admin inaction -> notify secondary admin"). Without
+-- a separate marker here, the secondary-inaction job would re-notify
+-- every coordinator on every single cron run once past threshold, since
+-- `escalated_at` itself never changes again after that first escalation.
+-- Same "add a narrow timestamp column when a real state-tracking need
+-- arises" precedent as `zero_match_at` (Unit 22), `prospect_cancelled_at`
+-- (Unit 26), `idle_prompted_at` (Unit 31).
+alter table requests add column coordinator_notified_at timestamptz;

@@ -1,0 +1,43 @@
+-- Unit 55: two small additive columns needed to make PRD.md §14's metrics
+-- honest, not approximated - both resolved with the project owner before
+-- writing any aggregation code (see prompts/README.md's Unit 55 entry for
+-- the full reasoning), both nullable with no default, existing rows left
+-- null rather than backfilled with a fabricated value.
+--
+-- `search_logs.stock_found`: "Tier 1 hit rate" (PRD.md §14: "stock found,
+-- no request raised") has no data path from the schema as it stood -
+-- search_logs never recorded whether stock existed at search time, and
+-- has no link at all (no phone/session) to whether a request later
+-- followed. lib/db/search.ts's getSearchResults already computes exactly
+-- this (whether any verified/active bank in the region has units > 0 for
+-- the searched blood group) - it just never stored it. Nullable, not
+-- `not null` - rows written before this migration (and any search with no
+-- blood_group specified, e.g. a bare adjacent-region-chip visit) genuinely
+-- have no answer, and a not-null default would silently fabricate one and
+-- corrupt the metric permanently. The dashboard (Unit 57) must show the
+-- sample window this metric is computed over, not just a bare percentage.
+alter table search_logs add column stock_found boolean;
+
+-- `requests.owner_assigned_at`: "Admin response time distribution" needs
+-- the moment an admin actually engaged with a request, distinct from
+-- `admin_notified_at` (when they were told about it). No such timestamp
+-- existed - `owner_admin_id` has no companion timestamp, and
+-- `requests.updated_at` is unsafe to reuse (bumped by many later,
+-- unrelated writes - schedule/close/resolve, even a donor's own
+-- prospect-accept via `syncRequestStageAfterProspectChange` - so by the
+-- time a metrics query runs it usually means "the last thing that
+-- happened to this request," not "when an admin first responded").
+-- Set exactly once (guarded `IS NULL`, never overwritten) the first time
+-- `owner_admin_id` transitions from null to non-null, by both
+-- `takeOwnership` and `transferRequestToRegion` (lib/db/admin-requests.ts)
+-- - transfer is itself a form of first engagement if nobody had claimed
+-- the request yet, so it guards the same way rather than resetting it.
+alter table requests add column owner_assigned_at timestamptz;
+
+-- Also fixed in the same unit, not a schema change but recorded here for
+-- context: `takeOwnership` used to unconditionally overwrite
+-- `admin_notified_at` to "now" on every call, destroying an earlier real
+-- notification timestamp (e.g. escalation.ts's zero-match notify) the
+-- moment an admin finally claimed the request - the exact signal this
+-- unit's admin-response-time metric needs. See lib/db/admin-requests.ts's
+-- own updated doc comment on `takeOwnership`.

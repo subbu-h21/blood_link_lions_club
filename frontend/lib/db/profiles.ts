@@ -1,5 +1,34 @@
 import { createDbClient } from "@/lib/db/client";
 
+/**
+ * Thrown by every portal's own `getActingX()` session resolver (Unit 48)
+ * when `profiles.is_blocked = true` (Unit 46's A5 moderation screen is the
+ * one writer of this flag, via `lib/db/reports.ts`'s `blockReportedUser`).
+ * One shared check, not three copies - `getActingDonor`/`getActingBankStaff`/
+ * `getActingAdmin` all call `assertNotBlocked` first, same "shared logic
+ * gets exactly one implementation" rule already applied to
+ * `syncRequestStageAfterProspectChange`/`standDownProspect`/
+ * `revealDonorContact`. Deliberately a real per-request DB check, not a
+ * JWT claim (unlike `profile_role`/`must_reset_password`) - this task's own
+ * wording ("rejected on next request") wants a block to take effect
+ * immediately, not bounded by a JWT's `jwt_expiry` staleness window the way
+ * a claim-based flag would be.
+ */
+export class BlockedUserError extends Error {}
+
+export async function assertNotBlocked(profileId: string): Promise<void> {
+  const db = createDbClient();
+  const { data, error } = await db
+    .from("profiles")
+    .select("is_blocked")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (error) throw error;
+  if (data?.is_blocked) {
+    throw new BlockedUserError("This account has been blocked");
+  }
+}
+
 export type Profile = {
   id: string;
   phone: string;

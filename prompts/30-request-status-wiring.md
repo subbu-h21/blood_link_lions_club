@@ -20,6 +20,22 @@ other stand-downs.
 Unit 22's request-creation wiring and Unit 24's prospect-status transitions —
 reuse the stand-down logic from there, do not write a second implementation
 of it here.
+**Note (checked during the M3 consistency audit, 2026-08-03):** what Unit 26
+actually built (`lib/db/prospects.ts`'s `cancelPledge`) is narrower than
+"stand-down logic" in general - it's scoped to `donor_id` and looks up
+*one* prospect (the caller's own active accepted/screening pledge), because
+that unit's only job was a donor cancelling their own pledge. This unit
+needs to stand down potentially *several* prospects in mixed statuses, all
+tied to one `request_id`, when the requester cancels the whole request -
+there is no existing function shaped for that yet. Read `cancelPledge`
+first, then extract a shared lower-level helper (e.g. a
+`standDownProspect(prospectId)` that both `cancelPledge` and this unit's
+request-level loop call) rather than either duplicating the status-setting
+logic inline or trying to force-fit the existing donor-scoped function to a
+request-scoped case it wasn't built for. Once refactored, update
+`cancelPledge` to call the shared helper too, so there is genuinely one
+implementation, not two independent ones that happen to set the same status
+string.
 
 ## Constraints
 3. **Donor phone numbers pass through exactly one serialisation layer.**
