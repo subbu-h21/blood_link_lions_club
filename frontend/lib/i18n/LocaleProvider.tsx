@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Dictionary } from "./en";
 import { dictionaries, LOCALE_COOKIE, type Locale } from "./locale";
 
@@ -43,11 +44,16 @@ export function LocaleProvider({
   children: React.ReactNode;
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const router = useRouter();
 
-  const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000`;
-  }, []);
+  const setLocale = useCallback(
+    (next: Locale) => {
+      setLocaleState(next);
+      document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000`;
+      router.refresh();
+    },
+    [router],
+  );
 
   const t = useCallback(
     (key: string, vars?: Vars) => interpolate(getByPath(dictionaries[locale], key), vars),

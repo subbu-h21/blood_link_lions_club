@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  // Dev-only: lets the dev server (and its HMR WebSocket) accept requests
+  // arriving via a cloudflared quick tunnel's random *.trycloudflare.com
+  // hostname instead of localhost. Without this, Next's dev-origin check
+  // rejects the cross-origin WebSocket upgrade, which cloudflared surfaces
+  // to the browser as a 502 and hydration never completes.
+  allowedDevOrigins: ["*.trycloudflare.com"],
 };
 
 export default nextConfig;

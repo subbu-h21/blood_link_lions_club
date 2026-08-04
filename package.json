@@ -5,7 +5,10 @@
   "description": "Database tooling (Supabase CLI, migrations, seed) — the Next.js app lives in frontend/.",
   "scripts": {
     "db:migrate": "supabase migration up --local",
-    "db:seed": "node scripts/seed.mjs"
+    "db:seed": "node scripts/seed.mjs",
+    "db:seed:accounts": "node --env-file=frontend/.env.local --experimental-websocket frontend/scripts/seed-bank-accounts.mjs",
+    "db:create-platform-manager": "node --env-file=frontend/.env.local --experimental-websocket frontend/scripts/create-platform-manager.mjs",
+    "security-scan": "python scripts/security-scan.py ."
   },
   "devDependencies": {
     "pg": "^8",

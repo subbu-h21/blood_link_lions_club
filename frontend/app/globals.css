@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbf8f4;
+  --foreground: #1c1917;
+
+  --color-blood-50: #fdf1f2;
+  --color-blood-100: #fbdfe1;
+  --color-blood-500: #c53856;
+  --color-blood-600: #b3223d;
+  --color-blood-700: #8f1a30;
+
+  --color-soil-100: #f4e3d7;
+  --color-soil-600: #b3541e;
+  --color-soil-700: #9a3412;
+
+  --color-banyan-100: #dcf0e6;
+  --color-banyan-600: #237a56;
+  --color-banyan-700: #1f6f4f;
+
+  --color-ink-100: #ebe6df;
+  --color-ink-200: #ded7cc;
+  --color-ink-500: #6b6459;
+  --color-ink-700: #423d35;
+  --color-ink-900: #1c1917;
+
+  --color-paper: #fbf8f4;
+  --color-sand-100: #f1ebe2;
+
+  --shadow-soft: 0 1px 2px rgba(28, 25, 23, 0.04), 0 4px 16px rgba(28, 25, 23, 0.06);
+  --shadow-lift: 0 2px 4px rgba(28, 25, 23, 0.05), 0 12px 28px rgba(28, 25, 23, 0.1);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+
+  --color-blood-50: var(--color-blood-50);
+  --color-blood-100: var(--color-blood-100);
+  --color-blood-500: var(--color-blood-500);
+  --color-blood-600: var(--color-blood-600);
+  --color-blood-700: var(--color-blood-700);
+
+  --color-soil-100: var(--color-soil-100);
+  --color-soil-600: var(--color-soil-600);
+  --color-soil-700: var(--color-soil-700);
+
+  --color-banyan-100: var(--color-banyan-100);
+  --color-banyan-600: var(--color-banyan-600);
+  --color-banyan-700: var(--color-banyan-700);
+
+  --color-ink-100: var(--color-ink-100);
+  --color-ink-200: var(--color-ink-200);
+  --color-ink-500: var(--color-ink-500);
+  --color-ink-700: var(--color-ink-700);
+  --color-ink-900: var(--color-ink-900);
+
+  --color-paper: var(--color-paper);
+  --color-sand-100: var(--color-sand-100);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
 }
 
 body {
-  background: var(--background);
+  background: var(--color-paper);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+@keyframes pulse-draw {
+  from {
+    stroke-dashoffset: 240;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pulse-divider {
+  stroke-dasharray: 240;
+  animation: pulse-draw 1.8s var(--ease) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-divider {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
 }
