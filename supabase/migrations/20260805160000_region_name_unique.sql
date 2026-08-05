@@ -1,0 +1,16 @@
+-- /ops-control's createRegion() (2026-08-04) had no uniqueness check at
+-- all - confirmed live by the project owner creating a region, then
+-- finding the platform-manager form let them submit the same name again
+-- with no error. Case-insensitive: "Kumta" and "kumta" are the same real
+-- place, and this is exactly the kind of typo/duplicate a single-person
+-- data-entry portal will hit. A real unique index is the authoritative
+-- enforcement (same "DB constraint is the real rule, app-level check is
+-- just a fast friendly pre-check" pattern already used everywhere else in
+-- this codebase, e.g. one_open_request_per_phone) - lib/db/platform-
+-- geography.ts's createRegion() gets a matching pre-check in the same
+-- change, not a DB-only fix.
+--
+-- No existing duplicate rows to clean up first - confirmed via direct
+-- query before writing this migration (only "Sirsi" and "Kumta" exist,
+-- no case-insensitive collision between them).
+create unique index regions_name_unique_ci on regions (lower(name));
