@@ -34,9 +34,13 @@ npm run dev            # local dev
 npm run build          # production build
 npm run lint           # eslint + tsc --noEmit
 npm run test           # vitest
-npm run db:migrate     # apply migrations
-npm run db:seed        # regions, pincodes, adjacency
+npm run db:migrate       # apply migrations
+npm run db:seed          # regions, pincodes, adjacency
+npm run db:seed:accounts # test bank_staff/admin accounts (local only)
+npm run security-scan    # mechanical half of the security-review skill (see below)
 ```
+
+`npm run security-scan` runs `scripts/security-scan.py`, the standard-library-only mechanical scanner Claude Code's `security-review` skill uses (Step 1 of it). It has no Claude-specific dependencies, so any tool can run it — but it is deliberately noisy and does not know about this file's Rule 1 clarification: every `createClient()` call inside a `"use client"` component is flagged as a BLOCKER, even when the very next line is `signInWithOtp`/`signInWithPassword`/`updateUser`/`signOut` (all Auth-service calls, browser-safe by the clarification above). Confirm what method is actually called before treating one of these as real. The judgment checklist the script *can't* run (donor phone exposure, region scoping, donation-confirmation authority, etc.) still has to be done by reading the diff — see `prompts/README.md`'s security-review notes for the full checklist text if the `security-review` skill isn't available in your tool.
 
 ---
 
@@ -46,7 +50,11 @@ Violating any of these is a bug regardless of whether the feature works.
 
 1. **The browser never talks to the database.** All access goes through server routes or server actions. The service role key stays in server-only env. RLS is defence in depth, never the primary access control.
 2. **Never accept a client-supplied primary key.** All IDs are UUIDs generated server-side. (The previous prototype allowed client IDs and got stored XSS through it.)
-3. **Donor phone numbers pass through exactly one serialisation layer.** Never re-implement the check per endpoint. A number is released only to: an admin in that donor's region with an `accepted` prospect, or the bank that donor is scheduled at. Never to a requester before acceptance, never in any search response.
+3. **Donor phone numbers pass through exactly one serialisation layer.** Never re-implement the check per endpoint. A number is released only to: an admin in that donor's region with an `accepted` prospect (A2); the bank that donor is scheduled at (B3/B4); or an admin/coordinator in that donor's region performing A3's donor-lookup reveal, tied to a specific open request in that same region with a required, non-empty reason, rate-limited per admin per hour, and logged like every other reveal (added Unit 41 — A3's own PRD text has no prospect relationship to gate on, so this is a genuine third channel, not a loophole; confirmed with the project owner before implementing). Never to a requester before acceptance. Search results themselves never contain a phone number, revealed or not — reveal is always a separate, individually logged action on one donor at a time.
+
+   **"Scheduled at" (B3/B4), concretely (added 2026-08-06):** this used to just mean "`prospects.status` is `accepted`/`screening`" — which meant a bank saw a donor's contact the instant that donor accepted, with no admin action in between at all, despite this rule's own wording. The real mechanism now is `prospects.assigned_at` (migration `20260806090000_prospects_assigned_at.sql`), set by an admin's explicit "Assign to bank" action (A1/A2) after they've called and pre-screened the donor. `lib/serialise/donor-contact.ts`'s `bank` channel and `lib/db/bank-prospects.ts`'s own query both require `assigned_at is not null` *in addition to* the status check, not instead of it — an accepted-but-unassigned donor is invisible to the bank, full stop.
+
+   **"In that donor's region" (A3), concretely (widened 2026-08-07):** this now means the donor's home region OR a region they've listed as a secondary "also available to donate in" pincode (`donor_availability_pincodes`, added 2026-08-05) — kept deliberately in lockstep with the matching engine's own identical definition (`findEligibleDonors`) and with A3's own search list (`searchAdminDonors`), so a donor visible in an admin's donor-lookup list is never one whose Reveal action then rejects them. Both `searchAdminDonors` and `revealDonorContactForLookup` (`lib/db/admin-donors.ts`) check home region first, then this secondary table, never a combined `.or()` filter — this codebase's established two-sequential-queries preference.
 4. **Never fetch a whole table into the browser.** Every list endpoint is server-filtered and paginated.
 5. **Only a blood bank confirms a donation.** No self-reporting anywhere. Donation confirmation is what resets a donor's eligibility clock, so it must be trustworthy.
 6. **Search stays public.** Never put auth, a signup wall, or email capture in front of blood bank search. Only *raising a request* requires OTP.
@@ -57,7 +65,15 @@ Violating any of these is a bug regardless of whether the feature works.
 
 ### Rule 1 clarification — Auth service vs data access
 
-Supabase Auth (GoTrue) calls MAY run in the browser: `signInWithOtp`, `verifyOtp`, `signOut`, `getSession`, `onAuthStateChange`. The publishable key is public by design and interactive OTP entry requires browser participation.
+Supabase Auth (GoTrue) calls MAY run in the browser: `signInWithOtp`, `verifyOtp`, `signInWithPassword`, `updateUser`, `refreshSession`, `signOut`, `getSession`, `getClaims`, `onAuthStateChange`, `resetPasswordForEmail`. The publishable key is public by design and interactive OTP/password entry requires browser participation. (`getClaims` added to this list 2026-08-09 — same Auth-only class as `getSession`, just reads/verifies the current session's JWT, never touches PostgREST; used client-side by `PhoneOtpFlow.tsx` and was already the established pattern server-side in `checkRecoveryEligibility`/`getVerifiedRequester` before this.)
+
+**`resetPasswordForEmail` (added 2026-08-07):** self-service "Forgot password?" for `bank_staff`/`admin`/`coordinator` accounts — `components/auth/ForgotPasswordRequestForm.tsx` + `ForgotPasswordConfirmForm.tsx`, alongside (not replacing) the existing admin-mediated reset. Deliberately excludes `platform_manager` — that account still has no self-service reset path at all, on purpose (see Conventions below); `lib/actions/forgot-password.ts`'s `checkRecoveryEligibility` enforces this server-side, checked before the new-password form ever renders, not just a hidden UI control.
+
+**`checkRecoveryEligibility`'s `amr` check (added 2026-08-09, real bug found live testing, not a hypothetical hardening):** the role check alone let *any* already-authenticated `bank_staff`/`admin`/`coordinator` session — an ordinary login, no recovery link involved — reach the "set new password" form with zero re-verification, because this app has no other change-password screen once past first login. A hijacked/stolen session could permanently lock out the real owner. Fix reads the JWT's `amr` (Authentication Method References) claim and requires a `recovery` entry, not just an eligible role — confirmed live that this claim survives a token refresh unchanged (so it doesn't spuriously expire mid-form) and that a plain login session's `amr` is `password` instead, correctly rejected. Don't remove this thinking it's redundant with the role check; it isn't.
+
+**Persistent phone-OTP sessions (added 2026-08-09):** `PhoneOtpFlow.tsx` (shared by `/donor/register` and the raise-a-request flow) now checks for an existing valid phone-verified session on mount and skips straight to `onVerified(phone, { resumed: true })` if one exists, instead of always starting at phone entry. Before this, every visit — including pressing back, or revisiting after already registering — forced a fresh OTP, which is both bad UX and an avoidable SMS-provider hit. The `resumed` flag matters: `app/donor/register/page.tsx` uses it to skip the push-notification opt-in on a resumed session specifically, because `lib/push/subscribe.ts` requires a genuine user gesture behind that prompt (most browsers silently ignore a permission request fired from a page-load effect) — don't wire push registration to fire on the resumed path. `components/search/SignOutButton.tsx` and `components/donor/SignOutButton.tsx` are the only way back to a fresh phone-entry screen now; the search one deliberately uses a hard `window.location.href` navigation, not `router.push`, because it redirects to the same route it's rendered on and a same-route client-side push doesn't remount/reset component state in the App Router (found live, not theoretical).
+
+**Phone number format, worth knowing before touching any of the above:** Supabase's phone JWT claim (`claims.phone`, read via `getClaims()`) strips the leading `+` — it's `"919900000006"`, not `"+919900000006"`, unlike the `COUNTRY_CODE = "+91"` constant used elsewhere in `PhoneOtpFlow.tsx`. A `startsWith(COUNTRY_CODE)` check against `claims.phone` will silently never match. `profiles.phone` is stored the same bare way (`919900000001`, no `+`). Confirmed live 2026-08-09 after this exact assumption broke the persistent-session feature's country-code-stripping logic (fixed with `slice(-10)` instead of a prefix check) — don't re-derive this the hard way again.
 
 Everything else stays server-only: `.from()`, `.rpc()`, `.storage`, and any query touching application data. The service role key never reaches the browser under any circumstance.
 
@@ -107,6 +123,7 @@ app/(public)/        searcher — no auth
 app/donor/           phone OTP
 app/bank/            email + password, admin-created
 app/admin/           email + password, super-admin-created
+app/ops-control/     email + password, one fixed account, bootstrap-script-created — not linked from any nav; see below
 lib/db/              server-only queries
 lib/serialise/       output shaping — the phone number rule lives here
 lib/i18n/            en + kn
@@ -116,6 +133,14 @@ supabase/migrations/ timestamped, never edited after merge
 - Server code imports from `lib/db`. Client components never import it.
 - One migration per milestone. Never edit a merged migration; add a new one.
 - Tables and columns `snake_case`; TypeScript `camelCase`; map at the boundary.
+
+### Platform manager (`app/ops-control/`)
+
+A fifth account tier, `role = 'platform_manager'`, added to close the account-creation gap this file's own Conventions table used to leave undecided (see `prompts/README.md` "Open decisions #1"). Creates regions, PIN codes, and regional admin accounts (email + temp password, forced reset on first login — the same mechanism bank staff already use); resets an existing admin's password. Exactly one account, ever — created once via `npm run db:create-platform-manager` (`frontend/scripts/create-platform-manager.mjs`), never through any in-app flow. `/ops-control` is not linked from any nav or any other portal; the real protection is the same server-verified-JWT role gate every other portal uses (`lib/supabase/proxy.ts`), not the route name.
+
+**Deliberate exception to Rule 8 (i18n):** `app/ops-control/*` and `components/platform/*`/`components/auth/PlatformManagerLoginFlow.tsx`/`PlatformManagerForcedPasswordResetForm.tsx` use hardcoded English strings, not `lib/i18n`. Approved by the project owner — this portal has exactly one operator, ever. Every other portal keeps full en/kn parity; do not extend this exception anywhere else without asking first.
+
+Self-service "forgot password" shipped 2026-08-07 for `bank_staff`/`admin`/`coordinator` (see Rule 1 clarification above) — the platform manager's own credential recovery is still deliberately out-of-band, on purpose, not a gap. Region-adjacency management and blood-bank onboarding remain related, explicitly deferred gaps — see `FUTURE-WORK.md`.
 
 ---
 

@@ -1,0 +1,57 @@
+# 60 — Final pre-launch security review
+
+**Handoff context for a fresh session.** Written 2026-08-09 at the end of a long session that did real feature work (below) and started this review but ran out of context budget to finish it properly. Nothing in this file has been fixed yet — it's a starting point, not a status report of completed work.
+
+**Docs were just brought up to date (2026-08-09, same session as this file) — read `CLAUDE.md` and `FUTURE-WORK.md` fresh, don't rely on any earlier summary of them.** The project owner caught that this project's docs had drifted from the real codebase (a real, structural gap — `prompts/README.md`'s own build log stops at Unit 58/2026-08-03 and was silently 6 days out of date until this same session added a catch-up section). `CLAUDE.md`'s Rule 1 clarification and `FUTURE-WORK.md` were both corrected to match current reality (real SMTP provider, the `amr` security fix, persistent-session behavior, real geography/bank data) as part of the same session this file comes from. If anything in this review turns up a doc that still looks stale, that's a real finding worth reporting, not something to silently work around.
+
+## Why this exists
+
+The project owner wants to open this app to real users (target: 100-200/day). This is the last item on the pre-launch checklist that's actually actionable without new infrastructure accounts (Supabase hosted project, Vercel, SMS provider — those are separate, still blocked on the owner). Run the full `security-review` skill, end to end, against the whole repo — not a diff, since this is a pre-launch gate, not a per-milestone check.
+
+## Do this
+
+1. Invoke the `security-review` skill (`Skill` tool, `skill: "security-review"`).
+2. Run the mechanical scan for real, fresh — don't trust the pasted results below as current, the codebase may have changed. From the project root: `npm run security-scan` (this project's own `scripts/security-scan.py`, the same tool the skill's Step 1 uses — confirmed equivalent per this project's own `CLAUDE.md`). On Windows, if running the skill's own bundled scanner instead, prefix `PYTHONIOENCODING=utf-8` and redirect to a file — its arrow character crashes the default console encoding, and use `python` not `python3` (not on PATH here).
+3. Work through **every** item in the skill's own Step 2 judgment checklist by reading the actual code — the mechanical scan cannot check these. Full checklist is in the skill file itself (`security-review` skill, Step 2) — don't skip it, it's the point of the exercise.
+4. Report findings in the skill's exact format (BLOCKERS / WARNINGS / PASSED). Do not fix anything until the owner has seen the list.
+
+## Known, standing false-positive pattern — don't re-litigate this
+
+The scan is deliberately noisy on one thing: **every `createClient()` call inside a `"use client"` component gets flagged as a rule-1 BLOCKER**, even when the very next line is an Auth-service call (`signInWithOtp`, `verifyOtp`, `signInWithPassword`, `updateUser`, `signOut`, `getSession`, `getClaims`, `onAuthStateChange`, `resetPasswordForEmail`). `CLAUDE.md`'s own "Rule 1 clarification" section names this exact exception — the line is *the service*, not *the SDK*: Auth API calls are fine in the browser, `.from()`/`.rpc()`/`.storage` (real data access) are not. **Confirm what method each flagged line actually calls before treating it as real** — most of the ~54 blockers in the last scan are this exact pattern (see raw output below) and are not real findings. `getClaims()` specifically isn't named in `CLAUDE.md`'s example list (only `getSession()` is) but is the same class of Auth-only call — checked and treated as allowed twice already this session (`components/auth/PhoneOtpFlow.tsx`, `lib/actions/forgot-password.ts`), consistent with the stated principle, not just assumed.
+
+The other recurring class: `"client component imports from lib/db"` — check whether the import is a **type-only import** (fine, TypeScript types don't ship code) or an actual function call (real violation). Grep the file for how the import is actually used, don't judge by the import line alone.
+
+## Raw mechanical scan output from this session (2026-08-09, re-run and compare — don't trust as current)
+
+54 blockers, 28 warnings. Full text saved alongside this file at `prompts/60-final-security-scan-raw-output.txt`. Re-run it anyway before relying on it — a few seconds, and the codebase may have changed since. Categories seen, for context on what to expect:
+
+- ~50 rule-1 "Supabase client in client component" — almost all the known false-positive pattern above. Verify each, don't rubber-stamp all of them either.
+- 2 rule-2 "primary key taken from client input" (`lib/db/admin-requests.ts:911`, `lib/db/donors.ts:108`) — **check these for real**, this is the exact class of bug CLAUDE.md says caused stored XSS in the previous prototype. Not yet verified this session.
+- 1 rule-7 "forbidden field: diagnosis" (`lib/i18n/en.ts:1505`) — **check this for real**. Could be a real violation (a diagnosis field slipped into a translated string somewhere) or a false positive (the word "diagnosis" appearing in unrelated copy, e.g. explaining what the app does *not* collect). Not yet checked.
+- 7 warnings: tables created without RLS in the same migration (`regions`, `pincodes`, `region_adjacency`, `blood_banks`, `profiles`, `donors`, `app_settings`) — defence-in-depth gap, real but known/long-standing, not new.
+- 7 warnings: "insert payload sets an `id` field" — need to confirm each one generates the UUID server-side rather than trusting a client value (rule 2 spirit, lower severity than the 2 blockers above since these are warnings, not blockers — the scanner is less sure).
+- 11 warnings: "phone selected outside lib/serialise" — **this is rule 3, the single most important rule in the whole file.** Every one of these needs to be read and confirmed as a legitimate internal use (e.g., server-side code that needs the raw phone for a DB write) versus something that leaks a phone number to a response without going through the one designated serialisation layer.
+- 2 warnings: unpaginated `select` (`admin-donors.ts:107`, `bank-stock.ts:37`) — rule 4, lower urgency at 100-200 users/day but still worth a look.
+
+None of these were fixed this session — the review was interrupted right after the scan ran, before Step 2 (judgment checks) started.
+
+## What changed this session — scrutinize these areas hardest
+
+Everything below is new or modified in the last session and has **not** been through a security review yet, only functional testing:
+
+1. **`frontend/lib/actions/forgot-password.ts`** — added an `amr` (Authentication Method Reference) check to `checkRecoveryEligibility()`. Real bug fixed: previously *any* authenticated session (not just a genuine password-recovery session) could reach the "set new password" form with zero re-verification — a hijacked/stolen session could permanently lock out the real account owner. Fixed and tested live (legitimate flow still works, exploit closed, `platform_manager` exclusion still correctly distinct) — but this touches the shared password-reset flow for `bank_staff`/`admin`/`coordinator`, worth an extra look given how central it is.
+2. **`frontend/components/auth/PhoneOtpFlow.tsx`** — added persistent-session support (skip OTP re-entry if a valid phone-verified session already exists) to the shared donor/searcher OTP component. Real bugs found and fixed during review: (a) a stuck-forever risk if `getClaims()` ever throws instead of resolving — added a bounded timeout matching the existing `ForgotPasswordConfirmForm.tsx` pattern; (b) the phone-claim country-code-stripping logic was silently broken (`claims.phone` has no `+` prefix, unlike the `COUNTRY_CODE` constant) — fixed with `slice(-10)`. Confirmed live that a different role's session (bank_staff) does NOT get mistaken for a verified donor/searcher session (checks `claims.phone`, which is only populated by real phone-OTP sign-in).
+3. **`frontend/components/search/RaiseRequestFlow.tsx`** + new **`frontend/components/search/SignOutButton.tsx`** — added a "Signed in as {phone}" header + sign-out to every post-OTP step. Real bug found and fixed: the sign-out button originally used `router.push()` to the *same* route it's rendered on, which is a same-route no-op in the App Router — session was cleared server-side but the UI didn't reset. Fixed with a hard `window.location.href` navigation.
+4. **`frontend/app/donor/(portal)/layout.tsx`** + **`frontend/lib/db/donor-portal.ts`** — `getActingDonor()` now also returns `fullName` (purely additive, confirmed via grep that all 15+ other call sites only destructure `{ donorId }`). Header now shows the donor's name.
+5. **`supabase/seed.sql`** — real Uttara Kannada geography (4 regions, 6 real PINs) and 5 real blood banks (sourced from e-RaktKosh's public directory + India Post PIN data), replacing placeholder data. `is_verified = true` on these matches the existing dev-data convention but is **not** a real phone-verification pass — worth checking this is understood as "real government directory data, not personally confirmed" if anyone treats `is_verified` as a stronger guarantee than it is.
+6. **`supabase/config.toml`** + **`.env`** (gitignored, not committed) — real Brevo SMTP credentials wired for password-reset email, and a partial/inert Twilio SMS config (account SID + auth token real, `message_service_sid` still a placeholder, so real SMS sending is not actually live yet). Both credentials were pasted into chat at one point — flagged for rotation to the project owner already, unclear if it's been done. Worth asking, not something to check in code.
+
+## Also worth knowing (not security, but relevant context)
+
+- Two extra "backlog" items the owner explicitly deferred and asked to leave alone for now: the privacy policy's grievance-officer contact (still literally the placeholder text) and the escalation/timing values in `app_settings` (still seeded defaults, never reviewed by the Lions Club). Not in scope for this review unless something you find changes the calculus.
+- `region_adjacency` is deliberately empty — genuinely attempted to source it (pulled a real taluk map, looked at it directly) and concluded it's not safely determinable without either a real GIS boundary source or someone with ground-truth local knowledge. Not a gap to silently fill in.
+- Full project context, the ten numbered rules, and conventions are in this repo's own `CLAUDE.md` — read that first if anything above is unclear, it's the authoritative source.
+
+## After this review
+
+Once this is done and reported, the remaining pre-launch items (per the owner's own priority) are, in order: SMS/OTP provider decision + real account, a real hosted Supabase project + hosting + domain, re-pointing production config at the real project, real (non-test) admin/bank accounts, then monitoring + backup confirmation on whatever's chosen. All blocked on the project owner's own accounts/decisions, not further code work.

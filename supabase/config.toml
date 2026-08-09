@@ -160,7 +160,17 @@ site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+# The two /forgot-password/confirm entries (2026-08-07, self-service
+# password reset) cover both hostnames this project's own dev/test
+# tooling actually uses (localhost in every Playwright script this
+# session; 127.0.0.1 to match site_url above) - without an exact match
+# here, Supabase silently falls back to the bare site_url instead of the
+# real confirm page (confirmed live before adding this, not assumed).
+additional_redirect_urls = [
+  "https://127.0.0.1:3000",
+  "http://127.0.0.1:3000/forgot-password/confirm",
+  "http://localhost:3000/forgot-password/confirm",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -233,15 +243,21 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# Real Brevo account, wired 2026-08-09 (self-service "Forgot password?" for
+# bank_staff/admin/coordinator, CLAUDE.md's 2026-08-07 rule-1-clarification
+# note). Sender is a verified Gmail address, not a verified custom domain -
+# Brevo itself flags this as DKIM/DMARC-unauthenticated ("freemail domain
+# not recommended"), so deliverability to Gmail/Yahoo/Outlook recipients
+# may be inconsistent until this project has its own domain to send from.
+[auth.email.smtp]
+enabled = true
+host = "smtp-relay.brevo.com"
+port = 587
+user = "b4effd001@smtp-brevo.com"
+# DO NOT commit this to git. Use environment variable substitution instead:
+pass = "env(SUPABASE_AUTH_SMTP_PASS)"
+admin_email = "bloodlinklions@gmail.com"
+sender_name = "Lion's Blood Link"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -271,6 +287,16 @@ max_frequency = "5s"
 [auth.sms.test_otp]
 "+919900000001" = "123456"
 "+919900000002" = "123456"
+"+919900000003" = "123456"
+"+919900000004" = "123456"
+"+919900000005" = "123456"
+"+919900000006" = "123456"
+"+919900000007" = "123456"
+"+919900000008" = "123456"
+"+919900000009" = "123456"
+"+919900000010" = "123456"
+"+919900000011" = "123456"
+"+919900000012" = "123456"
 
 # Configure logged in session timeouts.
 # [auth.sessions]
@@ -292,14 +318,16 @@ max_frequency = "5s"
 enabled = true
 uri = "pg-functions://postgres/public/custom_access_token_hook"
 
-# Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
-# `enabled = true` here with placeholder credentials is required to flip
-# GOTRUE_EXTERNAL_PHONE_ENABLED on locally - [auth.sms.test_otp] above
-# short-circuits before Twilio's API is ever called, so the placeholder
-# credentials are never actually used. See prompts/README.md.
+# Real Twilio account, wired 2026-08-07 (see prompts/README.md "Blocking on
+# real data" - PRD.md §15 item 6). [auth.sms.test_otp] above still
+# short-circuits before Twilio's API is called, so real SMS only goes out
+# when signing in with a phone number OTHER than the two test_otp numbers.
 [auth.sms.twilio]
 enabled = true
-account_sid = "test_sid"
+account_sid = "env(SUPABASE_AUTH_SMS_TWILIO_ACCOUNT_SID)"
+# TODO: replace once a Messaging Service is created in the Twilio console
+# (Messaging > Services > Create Messaging Service, attach a number) -
+# still the placeholder until then, real SMS sends will fail with this value.
 message_service_sid = "test_service_sid"
 # DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
 auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"

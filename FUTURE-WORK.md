@@ -1,0 +1,44 @@
+# Future work
+
+Standing notes on deliberately-deferred work — recorded here rather than built, so they aren't lost between sessions. Not a backlog of everything possible, only things surfaced by real decisions already made.
+
+## Self-service password reset — SHIPPED 2026-08-07 for bank staff/admin/coordinator; platform manager still deliberately excluded
+
+Originally flagged while building the platform manager portal (`/ops-control`), 2026-08-04. Built 2026-08-07 during a pre-production gap sweep: `components/auth/ForgotPasswordRequestForm.tsx` + `ForgotPasswordConfirmForm.tsx`, `lib/actions/forgot-password.ts`. Uses Supabase's own built-in `resetPasswordForEmail` (a real recovery *link*, not a typed code - see CLAUDE.md's Rule 1 clarification for why that was chosen over building custom email-template infrastructure) - alongside the existing admin-mediated reset, not replacing it (confirmed with the project owner).
+
+**The platform manager was deliberately re-confirmed as excluded, not an oversight** - `PlatformManagerLoginFlow.tsx`'s own doc comment already documented this before this feature existed ("there is exactly one platform manager; a lost credential is a deliberate, out-of-band fix"), and the project owner explicitly chose to keep it that way when asked directly. `checkRecoveryEligibility()` enforces this server-side.
+
+**2026-08-09 update — the role check alone wasn't enough, a real gap was found and fixed:** any already-authenticated `bank_staff`/`admin`/`coordinator` session (an ordinary login, no recovery link needed) could reach the password-reset form with zero re-verification, since this app has no other change-password screen post-onboarding - a hijacked session could permanently lock out the real owner. `checkRecoveryEligibility` now also checks the session's `amr` JWT claim for a genuine `recovery` entry, not just role. See `CLAUDE.md`'s Rule 1 clarification for the full writeup.
+
+**SMTP provider (updated 2026-08-09 — was "nobody's chosen one yet" as of this note's original writing, no longer accurate):** Brevo is chosen and wired - `supabase/config.toml`'s `[auth.email.smtp]` block, real credentials in the gitignored `.env`. Tested live against the local dev stack (a deliberate bad-password negative control got a real `535` rejection from Brevo's own server; the real key gets a clean send; the actual `/forgot-password` UI flow completes end-to-end). **Still open:** this was wired for local dev only - a real hosted Supabase project needs this reconfigured against it (dashboard setting or `supabase config push`, not yet confirmed which), and the sender address (`bloodlinklions@gmail.com`, a Gmail address, not a verified custom domain) means Brevo itself flags DKIM/DMARC as unauthenticated - real deliverability to Gmail/Yahoo/Outlook recipients may be inconsistent until this project has its own domain to send from. The SMTP key was also pasted into a chat session at setup time and should be rotated before this is trusted in production. SMS/OTP provider remains the "nobody's chosen one yet" gap now - see `prompts/README.md`'s "Blocking on real data" section, and the 2026-08-09 session notes below for what was actually evaluated (Twilio blocked entirely on trial for India destinations; Vonage/Fast2SMS/MSG91 researched, none yet decided).
+
+## Real geography and blood bank data — SHIPPED 2026-08-09, no longer placeholder-only
+
+`prompts/README.md`'s "Blocking on real data" section (Unit 02) says the app runs on fake geography until "someone (Lions Club, most likely) collects this" — **no longer fully accurate**, though not fully resolved either. As of 2026-08-09, `supabase/seed.sql` has:
+
+- **4 real regions** (Sirsi, Kumta, Dandeli, Karwar) with **6 real PIN codes**, sourced from India Post's directory, cross-checked against multiple independent sources. The 3 old `PLACEHOLDER` PIN codes are gone.
+- **5 real blood banks**, sourced from e-RaktKosh's public Blood Bank Directory (confirmed the complete Uttara Kannada district list via its own pagination) — real names, addresses, phones. The old fake `0000000000` phone number is gone, replaced with the bank's real one.
+
+**What's still genuinely open, not solved by this:**
+- Only these 4 regions/5 banks exist — the other ~8 taluks of the district (Ankola, Honnavar, Bhatkal, Siddapur, Yellapur, Haliyal, Joida, Mundgod) have no coverage at all. PRD.md §15 item 8 ("region rollout order after Sirsi") is still an undecided Lions Club call.
+- `is_verified = true` on these banks matches the existing local-dev-data convention, not a real phone-verification pass. This is real government directory data, not personally confirmed — SPEC.md §10 item 3's original plan (phone calls to verify) hasn't happened. Don't treat `is_verified` here as a stronger guarantee than it is.
+- The Sirsi PIN-to-bank pairing (`581401` vs `581402`) started as a guess and was later confirmed via a real listing for one of the two banks - documented in `supabase/seed.sql`'s own comments, worth a read if either bank's data looks off.
+- Region adjacency was **not** solved by having real geography now — see the dedicated note below.
+
+## Donor appointment time (D4 "time window")
+
+Surfaced 2026-08-07 during a pre-production gap sweep; explicitly deferred by the project owner ("this feature is not needed... the donor can just contact the hospital and get to know the time").
+
+D4 (the donor's own "Active pledge" screen, `/donor/pledge`) shows the destination bank's name/address/phone once a donor is assigned there, but has no appointment time - PRD.md's own literal D4 spec text ("Destination bank name, address, phone, **time window**") has never been built. `PledgeDetail`/`getActivePledgeDetail` (`lib/db/prospects.ts`) has no field for it; nothing anywhere lets an admin record when a donor should show up. Real-world workaround today: the donor calls the bank directly, or the admin tells them by phone (never written down anywhere in the app).
+
+If this gets picked up later, real open questions to resolve first, not yet decided:
+- **Format**: a free-text field (e.g. "Tomorrow evening, 5–7pm" - matches how this is actually agreed, over a phone call) vs. structured start/end datetime columns (more precise, more UI, forces an exact commitment the admin may not really have).
+- **Where it lives**: per-prospect (`prospects`, not `requests`) - scheduling has been donor-level since the 2026-08-06 "Assign to bank" redesign (a request can have multiple assigned donors), so this should follow that same per-donor model, not a single request-wide field.
+- **When it's set**: bundled into the existing "Assign to bank" click (one step, but blocks/complicates assigning if the admin doesn't have a time yet) vs. a separate, optional action settable/editable any time after assigning (assign stays exactly as it works today; D4 just shows nothing extra until/unless a time is actually set).
+
+## Two gaps this feature surfaces but doesn't solve
+
+Not part of the platform manager build, but worth remembering since a platform manager will hit both quickly:
+
+- **Region adjacency.** Search's "Also check: Siddapur · Yellapur" nearby-region suggestions (PRD.md §6.1 S2) come from the `region_adjacency` table, which has no management UI anywhere — a region created via `/ops-control` gets zero adjacency rows and will never appear as a suggestion (or receive one) until someone sets that up directly in the database. **2026-08-09: genuinely attempted, not just unstarted.** The district now has 4 real regions with real geography (Sirsi, Kumta, Dandeli, Karwar — see `supabase/seed.sql`), so this stopped being purely hypothetical. Pulled a real Uttara Kannada taluk map and looked at it directly: Karwar and Dandeli have Joida/Ambikanagara visibly between them; Yellapur sits between Dandeli and Sirsi; only Kumta-Sirsi looked plausible and even that was "moderate confidence" at best. Deliberately left empty rather than guess - a wrong "nearby region" suggestion could misdirect a family during a real emergency. Needs either an actual GIS boundary source or someone with real ground-truth knowledge of the district, not another map-squinting attempt.
+- **Blood bank onboarding.** A brand-new region has no blood bank until one is added through the existing bank self-registration/admin-verification flow (unrelated to this feature, unchanged by it) — per the domain vocabulary in `CLAUDE.md`, a region "must contain ≥1 blood bank" to be functional for search/matching. A region + pincodes + an assigned admin, with zero banks, is a real but non-functional region until that separately happens. (No longer true for the 4 regions seeded 2026-08-09 - each has ≥1 real, verified-in-name-only bank; still true for any *new* region created after that.)

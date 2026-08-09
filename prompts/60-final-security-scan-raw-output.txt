@@ -1,0 +1,258 @@
+
+Scanned 211 file(s) under D:\code_files\blood_donor_search\blood_donor_search2
+
+
+BLOCKERS (54)
+------------------------------------------------------------
+  [rule 1] frontend\app\donor\register\page.tsx:143
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminAuditLog.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminBankManagement.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminDonorLookup.tsx:6
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminDonorLookup.tsx:7
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminMetricsDashboard.tsx:4
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminModeration.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminMyCases.tsx:9
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminMyCases.tsx:10
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminQueueBoard.tsx:8
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\AdminRequestDetail.tsx:9
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\admin\SignOutButton.tsx:15
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\AdminForcedPasswordResetForm.tsx:52
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\AdminLoginFlow.tsx:62
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\BankLoginFlow.tsx:61
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\ForcedPasswordResetForm.tsx:48
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\ForgotPasswordConfirmForm.tsx:73
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\ForgotPasswordConfirmForm.tsx:112
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\ForgotPasswordRequestForm.tsx:47
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\PhoneOtpFlow.tsx:87
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\PhoneOtpFlow.tsx:139
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\PhoneOtpFlow.tsx:164
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\PhoneOtpFlow.tsx:190
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\PlatformManagerForcedPasswordResetForm.tsx:47
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\auth\PlatformManagerLoginFlow.tsx:52
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\bank\BankSettingsForm.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\bank\ConfirmDonationForm.tsx:7
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\bank\IncomingProspects.tsx:9
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\bank\SignOutButton.tsx:15
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\donor\DonorHomeView.tsx:12
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\donor\DonorHomeView.tsx:13
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\donor\DonorSettingsView.tsx:7
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\donor\DonorSettingsView.tsx:14
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\donor\DonorSettingsView.tsx:155
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\donor\PledgeView.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\donor\RequestResponseFlow.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\donor\SignOutButton.tsx:18
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\platform\AdminsList.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\platform\CreateAdminForm.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\platform\CreateAdminForm.tsx:6
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\platform\CreatePincodeForm.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\platform\CreateRegionForm.tsx:5
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\platform\OpsControlDashboard.tsx:9
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\platform\OpsControlDashboard.tsx:10
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\platform\SignOutButton.tsx:14
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\search\RaiseRequestFlow.tsx:15
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\search\RaiseRequestFlow.tsx:16
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\search\RaiseRequestFlow.tsx:17
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\search\RequestStatusView.tsx:6
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\search\SearchForm.tsx:7
+      client component imports from lib/db
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 1] frontend\components\search\SignOutButton.tsx:28
+      Supabase client constructed inside a client component
+      → Move this to a server route or server action. The browser must never hold DB access.
+  [rule 2] frontend\lib\db\admin-requests.ts:911
+      primary key taken from client input
+      → Generate the UUID server-side. This is how the previous codebase got stored XSS.
+  [rule 2] frontend\lib\db\donors.ts:108
+      primary key taken from client input
+      → Generate the UUID server-side. This is how the previous codebase got stored XSS.
+  [rule 7] frontend\lib\i18n\en.ts:1505
+      forbidden field: diagnosis
+      → Store blood group, units, contact phone and patient first name only.
+
+WARNINGS (28)
+------------------------------------------------------------
+  [rule 1] supabase\migrations\20260731091414_geography_identity_donors_banks_settings.sql:5
+      table `regions` created without RLS enabled in the same migration
+      → Enable RLS as defence in depth even though access is server-side.
+  [rule 1] supabase\migrations\20260731091414_geography_identity_donors_banks_settings.sql:13
+      table `pincodes` created without RLS enabled in the same migration
+      → Enable RLS as defence in depth even though access is server-side.
+  [rule 1] supabase\migrations\20260731091414_geography_identity_donors_banks_settings.sql:22
+      table `region_adjacency` created without RLS enabled in the same migration
+      → Enable RLS as defence in depth even though access is server-side.
+  [rule 1] supabase\migrations\20260731091414_geography_identity_donors_banks_settings.sql:31
+      table `blood_banks` created without RLS enabled in the same migration
+      → Enable RLS as defence in depth even though access is server-side.
+  [rule 1] supabase\migrations\20260731091414_geography_identity_donors_banks_settings.sql:45
+      table `profiles` created without RLS enabled in the same migration
+      → Enable RLS as defence in depth even though access is server-side.
+  [rule 1] supabase\migrations\20260731091414_geography_identity_donors_banks_settings.sql:60
+      table `donors` created without RLS enabled in the same migration
+      → Enable RLS as defence in depth even though access is server-side.
+  [rule 1] supabase\migrations\20260731091414_geography_identity_donors_banks_settings.sql:86
+      table `app_settings` created without RLS enabled in the same migration
+      → Enable RLS as defence in depth even though access is server-side.
+  [rule 2] frontend\lib\db\admin-banks.ts:241
+      insert payload sets an `id` field
+      → Confirm this UUID is generated server-side, not taken from the request body.
+  [rule 2] frontend\lib\db\audit-log.ts:21
+      insert payload sets an `id` field
+      → Confirm this UUID is generated server-side, not taken from the request body.
+  [rule 2] frontend\lib\db\platform-admins.ts:118
+      insert payload sets an `id` field
+      → Confirm this UUID is generated server-side, not taken from the request body.
+  [rule 2] frontend\lib\db\reports.ts:68
+      insert payload sets an `id` field
+      → Confirm this UUID is generated server-side, not taken from the request body.
+  [rule 2] frontend\lib\db\search.ts:105
+      insert payload sets an `id` field
+      → Confirm this UUID is generated server-side, not taken from the request body.
+  [rule 2] frontend\scripts\create-platform-manager.mjs:87
+      insert payload sets an `id` field
+      → Confirm this UUID is generated server-side, not taken from the request body.
+  [rule 2] frontend\scripts\seed-bank-accounts.mjs:114
+      insert payload sets an `id` field
+      → Confirm this UUID is generated server-side, not taken from the request body.
+  [rule 3] frontend\lib\db\admin-banks.ts:40
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\admin-donors.ts:293
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\admin-requests.ts:791
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\admin-requests.ts:847
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\bank-portal.ts:112
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\bank-prospects.ts:88
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\profiles.ts:79
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\profiles.ts:89
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\prospects.ts:341
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\prospects.ts:351
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\requests.ts:376
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 3] frontend\lib\db\search.ts:42
+      phone selected outside lib/serialise
+      → Route donor output through lib/serialise. The phone rule must live in exactly one place.
+  [rule 4] frontend\lib\db\admin-donors.ts:107
+      select without limit, range, or single
+      → Add pagination. At district scale an unbounded select is a multi-MB payload on a 3G phone.
+  [rule 4] frontend\lib\db\bank-stock.ts:37
+      select without limit, range, or single
+      → Add pagination. At district scale an unbounded select is a multi-MB payload on a 3G phone.
+
+54 blocker(s). Judgment checks in SKILL.md still required.
+
