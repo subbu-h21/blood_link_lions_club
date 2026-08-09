@@ -324,6 +324,9 @@ uri = "pg-functions://postgres/public/custom_access_token_hook"
 # when signing in with a phone number OTHER than the two test_otp numbers.
 [auth.sms.twilio]
 enabled = true
+# DO NOT commit your Twilio account SID to git. Use environment variable substitution instead:
+# (fixed 2026-08-10 - was a literal SID, sitting in git history since 2026-08-07;
+# see prompts/61-launch-infrastructure.md's "Twilio SID" note for the fix-forward decision.)
 account_sid = "env(SUPABASE_AUTH_SMS_TWILIO_ACCOUNT_SID)"
 # TODO: replace once a Messaging Service is created in the Twilio console
 # (Messaging > Services > Create Messaging Service, attach a number) -
