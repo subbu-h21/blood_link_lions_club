@@ -20,16 +20,16 @@ export async function loadIncomingProspects(): Promise<IncomingProspect[]> {
 }
 
 export async function markProspectArrivedAction(prospectId: string): Promise<ProspectActionResult> {
-  const { bankId } = await getActingBankStaff();
-  return markProspectArrived(bankId, prospectId);
+  const { profileId, bankId } = await getActingBankStaff();
+  return markProspectArrived(bankId, profileId, prospectId);
 }
 
 export async function setProspectScreeningOutcomeAction(
   prospectId: string,
   outcome: "rejected" | "no_show",
 ): Promise<ProspectActionResult> {
-  const { bankId } = await getActingBankStaff();
-  return setProspectScreeningOutcome(bankId, prospectId, outcome);
+  const { profileId, bankId } = await getActingBankStaff();
+  return setProspectScreeningOutcome(bankId, profileId, prospectId, outcome);
 }
 
 export async function loadConfirmDonationDetail(prospectId: string): Promise<ConfirmDonationDetail | null> {
@@ -41,6 +41,6 @@ export async function confirmDonationAction(
   prospectId: string,
   confirmedBloodGroup: BloodGroup,
 ): Promise<ConfirmDonationResult> {
-  const { bankId } = await getActingBankStaff();
-  return confirmDonation(bankId, prospectId, confirmedBloodGroup);
+  const { profileId, bankId } = await getActingBankStaff();
+  return confirmDonation(bankId, profileId, prospectId, confirmedBloodGroup);
 }

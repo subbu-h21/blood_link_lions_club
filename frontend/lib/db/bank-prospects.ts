@@ -177,7 +177,11 @@ export type ProspectActionResult = { ok: true } | { ok: false; reason: "not_foun
  * `conflict` rather than silently double-transitioning - same
  * re-check-don't-pre-check pattern as `acceptProspect` (Unit 24).
  */
-export async function markProspectArrived(bankId: string, prospectId: string): Promise<ProspectActionResult> {
+export async function markProspectArrived(
+  bankId: string,
+  actorId: string,
+  prospectId: string,
+): Promise<ProspectActionResult> {
   const db = createDbClient();
   const scoped = await getBankScopedProspect(db, bankId, prospectId);
   if (!scoped) return { ok: false, reason: "not_found" };
@@ -191,6 +195,13 @@ export async function markProspectArrived(bankId: string, prospectId: string): P
     .maybeSingle();
   if (error) throw error;
   if (!updated) return { ok: false, reason: "conflict" };
+
+  // Added 2026-08-10, real gap found live: this and its two sibling
+  // status-change functions below wrote nothing to audit_log, unlike
+  // every other state-changing bank/admin action in this codebase.
+  await writeAuditLog(actorId, "mark_arrived", "prospect", prospectId, {
+    donorId: scoped.donorId,
+  });
 
   return { ok: true };
 }
@@ -209,6 +220,7 @@ export async function markProspectArrived(bankId: string, prospectId: string): P
  */
 export async function setProspectScreeningOutcome(
   bankId: string,
+  actorId: string,
   prospectId: string,
   outcome: "rejected" | "no_show",
 ): Promise<ProspectActionResult> {
@@ -227,6 +239,11 @@ export async function setProspectScreeningOutcome(
   if (!updated) return { ok: false, reason: "conflict" };
 
   await syncRequestStageAfterProspectChange(scoped.requestId);
+
+  await writeAuditLog(actorId, "screening_outcome", "prospect", prospectId, {
+    donorId: scoped.donorId,
+    outcome,
+  });
 
   return { ok: true };
 }
@@ -304,6 +321,7 @@ export type ConfirmDonationResult =
  */
 export async function confirmDonation(
   bankId: string,
+  actorId: string,
   prospectId: string,
   confirmedBloodGroup: BloodGroup,
 ): Promise<ConfirmDonationResult> {
@@ -353,6 +371,16 @@ export async function confirmDonation(
     .eq("id", scoped.donorId)
     .maybeSingle();
   if (profileError) throw profileError;
+
+  // Added 2026-08-10, real gap found live testing: this is the one
+  // action CLAUDE.md itself calls out as needing to be "trustworthy" -
+  // it resets a donor's eligibility clock and resolves the request - and
+  // had no audit_log record of which bank-staff member performed it.
+  await writeAuditLog(actorId, "confirm_donation", "prospect", prospectId, {
+    donorId: scoped.donorId,
+    requestId: scoped.requestId,
+    confirmedBloodGroup,
+  });
 
   return { ok: true, donorName: profile?.full_name ?? "" };
 }
