@@ -4587,12 +4587,20 @@ drifted from the real codebase and asked for a catch-up pass. This section
 is reconstructed from session memory afterward, not written live - treat
 it as a orientation summary, not a precise record. **For the authoritative
 current state of anything mentioned here, check `CLAUDE.md` and
-`FUTURE-WORK.md` directly, not this summary.** Also worth knowing: this
-repo's git history stops at Unit 07 (`git log`, last real commit
-2026-07-31) - none of Units 08-58 or anything below were ever committed.
-Everything past that point exists only as uncommitted working-directory
-files. No rollback point, no diff history, for the large majority of this
-project's actual code.
+`FUTURE-WORK.md` directly, not this summary.**
+
+**Git history gap - found and closed the same day, but read `CLAUDE.md`'s
+own "Git history" note (in the Commands section) before trusting
+`git log`/`git blame` on anything in the 2026-08-01 through 2026-08-09
+range.** This repo's real, incremental commit history had stopped dead at
+Unit 07 (2026-07-31) - nothing from Unit 08 onward was ever committed as
+it was built, leaving 212 files with no rollback point for the large
+majority of this project's actual code. Fixed 2026-08-09: committed
+everything in 9 date-clustered commits (grouped by file modification date,
+not real original boundaries - a reconstruction, explicitly labelled as
+one in every commit message, not a substitute for the real incremental
+history that was never captured). `git log` now reads sensibly and every
+commit from 2026-08-09 onward is a real, contemporaneous commit again.
 
 **Roughly chronological, real features/fixes, not exhaustive:**
 
