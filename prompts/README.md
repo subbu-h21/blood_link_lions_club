@@ -4651,11 +4651,7 @@ commit from 2026-08-09 onward is a real, contemporaneous commit again.
     All confirmed live, not just read from code. Results not written up
     as a dedicated entry here - ask the project owner or check chat
     history from that session if the specifics matter.
-- **Final pre-launch security review** - started 2026-08-09, **not
-  finished** - see `prompts/60-final-security-review.md` for the handoff
-  and `prompts/60-final-security-scan-raw-output.txt` for the last
-  mechanical scan run. Do that review before treating this codebase as
-  launch-ready; nothing in this catch-up section is a substitute for it.
+- **Final pre-launch security review** - started 2026-08-09, **completed the same day** by a fresh session using the handoff. Result: 0 blockers, 0 warnings, including live verification of region-scoping and the new `amr` recovery-session gate against real browser sessions, not just code reading. See `prompts/60-final-security-review.md` for the full outcome. One non-blocking callout: credential rotation (Twilio/Brevo secrets pasted into chat) was still unconfirmed as of this review.
 
 ---
 
