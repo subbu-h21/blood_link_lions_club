@@ -156,6 +156,17 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
+#
+# NOTE (2026-08-10, prompts/61-launch-infrastructure.md section 4): this
+# value is what Auth uses to build every email link (password reset,
+# confirmation, etc.), not just an allow-list entry - `site_url` staying
+# "http://127.0.0.1:3000" after section 2's `config push` meant every
+# real production auth email would have contained a broken localhost
+# link. Real value is only correct when pushed to the HOSTED project via
+# `supabase config push` - local dev still needs this at 127.0.0.1:3000,
+# so don't "fix" this file's own local-dev value, only the pushed one
+# should differ (same env-specific-value caution as the Vault
+# cron_site_url/cron_secret fix from section 2/3).
 site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
@@ -166,10 +177,15 @@ site_url = "http://127.0.0.1:3000"
 # session; 127.0.0.1 to match site_url above) - without an exact match
 # here, Supabase silently falls back to the bare site_url instead of the
 # real confirm page (confirmed live before adding this, not assumed).
+# The real bloodlink.live entry (2026-08-10, section 4) is the same fix
+# for the real hosted project - added here for documentation/consistency
+# even though, like site_url above, only the pushed value (not this
+# committed local-dev file) is what actually matters for production.
 additional_redirect_urls = [
   "https://127.0.0.1:3000",
   "http://127.0.0.1:3000/forgot-password/confirm",
   "http://localhost:3000/forgot-password/confirm",
+  "https://bloodlink.live/forgot-password/confirm",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
