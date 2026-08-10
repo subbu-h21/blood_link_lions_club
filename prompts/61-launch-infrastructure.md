@@ -1,5 +1,9 @@
 # 61 — Go live: infrastructure, hosting, and the last real blockers
 
+**Sections 1-6 COMPLETED 2026-08-10, same day, by a fresh session using this handoff.** The app is live at **`https://bloodlink.live`** (real domain, GoDaddy DNS → Vercel), backed by a real hosted Supabase project (`kqucebkqjgnwhjgjuqwm`, Mumbai region) with all 23 migrations + real seed data applied, SMTP live, redirect URLs re-pointed, a real platform-manager account created and login-verified, and real production VAPID keys generated and deployed. Full detail (including two real gaps caught mid-flow — the GitHub repo being public instead of private, and hardcoded local-dev placeholders in Supabase Vault that would've silently broken every scheduled cron job in production) is in `prompts/README.md`'s dated 2026-08-10 entry — read that before assuming anything below still needs doing. **Section 7 (SMS/OTP) remains deliberately deferred, now being picked up in a later session — don't treat its presence below as still-untouched without checking `prompts/README.md` first.** Section 8 (backups + monitoring) was never part of this session's ask and is still untouched.
+
+**Below this line is the original handoff context, written *before* sections 1-6 ran — kept for reference, not a live status.**
+
 **Handoff context for a fresh session.** Written 2026-08-10. The app itself is in good shape — feature-complete, a full security review passed clean (0 blockers/0 warnings, `prompts/60-final-security-review.md`), a real audit-log gap found and fixed the same day. Real geography and blood bank data are seeded. **None of that is reachable by anyone except the project owner, on their own laptop.** Everything — the app, the database — only runs inside local Docker + a local dev server. This file is about closing that gap: the project owner wants to open this to real users, target ~100-200/day.
 
 ## Read first
