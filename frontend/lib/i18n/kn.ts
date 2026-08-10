@@ -191,6 +191,17 @@ const kn: Dictionary = {
     searchSectionTitle: "ನೇರವಾಗಿ ಹುಡುಕಿ",
     searchSectionSubtitle: "ಈಗ ಯಾರು ಸಹಾಯ ಮಾಡಬಹುದು ಎಂದು ನೋಡಲು ಸ್ಥಳ ಮತ್ತು ರಕ್ತದ ಗುಂಪನ್ನು ನಮೂದಿಸಿ.",
   },
+  qrLanding: {
+    eyebrow: "ಉತ್ತರ ಕನ್ನಡ · ಲಯನ್ಸ್ ಕ್ಲಬ್ ಉಪಕ್ರಮ",
+    heading: "ನಿಮಗೆ ಏನು ಬೇಕು?",
+    subtitle: "ಮುಂದುವರಿಯಲು ಕೆಳಗಿನ ಆಯ್ಕೆಯನ್ನು ಟ್ಯಾಪ್ ಮಾಡಿ.",
+    searchBankTitle: "ರಕ್ತ ಬ್ಯಾಂಕ್ ಹುಡುಕಿ",
+    searchBankDescription: "ನಿಮ್ಮ ಸಮೀಪದ ರಕ್ತ ಬ್ಯಾಂಕ್‌ಗಳು ಮತ್ತು ಅವುಗಳ ಪ್ರಸ್ತುತ ಸ್ಟಾಕ್ ನೋಡಿ.",
+    searchDonorTitle: "ದಾನಿ ಹುಡುಕಿ",
+    searchDonorDescription: "ತುರ್ತಾಗಿ ರಕ್ತ ಬೇಕೇ? ವಿನಂತಿ ಸಲ್ಲಿಸಿ, ನಾವು ದಾನಿಯನ್ನು ಹುಡುಕುತ್ತೇವೆ.",
+    donateTitle: "ರಕ್ತದಾನ ಮಾಡಿ",
+    donateDescription: "ದಾನಿಯಾಗಿ ನೋಂದಾಯಿಸಿ ಮತ್ತು ಒಂದು ಜೀವ ಉಳಿಸಲು ಸಹಾಯ ಮಾಡಿ.",
+  },
   search: {
     s1: {
       title: "ರಕ್ತ ಹುಡುಕಿ",
