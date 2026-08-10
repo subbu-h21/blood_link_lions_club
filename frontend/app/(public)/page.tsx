@@ -21,33 +21,60 @@ export default async function Home() {
   const t = dictionaries[locale].landing;
 
   return (
-    <main className="flex flex-1 flex-col">
-      <section className="flex flex-col items-center gap-6 px-4 pt-14 pb-10 text-center sm:pt-20">
-        <Image src="/lions-club-logo.webp" alt="Lions Club International" width={72} height={67} priority />
-        <span className="rounded-full bg-blood-50 px-4 py-1.5 text-sm font-medium text-blood-600">
-          {t.eyebrow}
-        </span>
-        <h1 className="max-w-2xl font-display text-4xl font-semibold tracking-tight text-ink-900 sm:text-5xl">
-          {t.heading}
-        </h1>
-        <p className="max-w-md text-base text-ink-500">{t.subtitle}</p>
+    <main className="flex flex-1 flex-col overflow-x-clip">
+      <section className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 overflow-hidden px-4 pt-14 pb-10 sm:pt-20 lg:min-h-[calc(100svh-5rem)] lg:grid-cols-[1fr_1.15fr] lg:gap-12 lg:overflow-visible">
+        <div className="flex flex-col items-center gap-6 text-center lg:translate-y-[-4rem] lg:items-start lg:text-left">
+          <Image src="/lions-club-logo.webp" alt="Lions Club International" width={72} height={67} priority />
+          <span className="rounded-full bg-blood-50 px-4 py-1.5 text-sm font-medium text-blood-600">
+            {t.eyebrow}
+          </span>
+          <h1 className="max-w-2xl font-display text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+            <span className="text-ink-900">{t.headingPart1} </span>
+            <span className="text-blood-600">{t.headingPart2}</span>
+          </h1>
+          <p className="max-w-lg text-base text-ink-500 sm:text-lg">{t.subtitle}</p>
 
-        <svg
-          className="pulse-divider mt-2 text-blood-600"
-          width="240"
-          height="24"
-          viewBox="0 0 240 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M0 12H50L60 2L72 22L84 12H110L120 4L128 12H240"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <Link
+            href="/donor/register"
+            className="inline-flex items-center gap-2 rounded-full bg-blood-600 px-5 py-3 text-sm font-semibold text-white shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:bg-blood-700 hover:shadow-[var(--shadow-lift)]"
+          >
+            {t.donorTitle}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+
+          <svg
+            className="pulse-divider mt-2 text-blood-600"
+            width="240"
+            height="24"
+            viewBox="0 0 240 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M0 12H50L60 2L72 22L84 12H110L120 4L128 12H240"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
+        {/* Anchor the transparent artwork to the lower-right edge on wide
+            screens. Flipping it moves the cropped forearm to the viewport
+            edge, so the composition feels intentionally full-bleed. */}
+        <div className="relative mx-auto aspect-[5/6] w-full max-w-[34rem] lg:absolute lg:right-[min(0px,calc((100vw-72rem)/-2))] lg:bottom-0 lg:h-[min(55rem,92vh)] lg:w-[min(60rem,62vw)] lg:max-w-none">
+          <Image
+            src="https://res.cloudinary.com/dssvyl2zn/image/upload/v1786372742/blood-link-hero-bag.png"
+            alt={t.heroImageAlt}
+            fill
+            priority
+            sizes="(min-width: 1024px) 55vw, 100vw"
+            className="object-contain object-bottom object-right translate-x-[14vw] lg:translate-x-[calc(14vw+12rem)] -scale-x-100"
           />
-        </svg>
+        </div>
       </section>
 
       <section id="search" className="flex flex-col items-center gap-6 bg-sand-100 px-4 py-14">

@@ -173,7 +173,8 @@ export type Dictionary = {
   };
   landing: {
     eyebrow: string;
-    heading: string;
+    headingPart1: string;
+    headingPart2: string;
     subtitle: string;
     findBloodTitle: string;
     findBloodDescription: string;
@@ -188,6 +189,7 @@ export type Dictionary = {
     searchSectionTitle: string;
     searchSectionSubtitle: string;
     staffSectionTitle: string;
+    heroImageAlt: string;
   };
   qrLanding: {
     eyebrow: string;
@@ -199,6 +201,8 @@ export type Dictionary = {
     searchDonorDescription: string;
     donateTitle: string;
     donateDescription: string;
+    initiativeLabel: string;
+    sponsorLabel: string;
   };
   search: {
     s1: {
@@ -940,7 +944,8 @@ const en: Dictionary = {
   },
   landing: {
     eyebrow: "Uttara Kannada · Lions Club initiative",
-    heading: "Blood, when it matters most.",
+    headingPart1: "Donate Blood,",
+    headingPart2: "Save Lives",
     subtitle:
       "Find blood banks and donors near you, register to donate, or coordinate as a volunteer — all in one place.",
     findBloodTitle: "Find blood bank",
@@ -956,6 +961,7 @@ const en: Dictionary = {
     searchSectionTitle: "Search directly",
     searchSectionSubtitle: "Enter a location and blood group to see who can help right now.",
     staffSectionTitle: "Blood bank & admin sign-in",
+    heroImageAlt: "An arm connected by a donation line to a blood bag",
   },
   qrLanding: {
     eyebrow: "Uttara Kannada · Lions Club initiative",
@@ -967,6 +973,8 @@ const en: Dictionary = {
     searchDonorDescription: "Need blood urgently? Raise a request and we'll find a donor.",
     donateTitle: "Donate blood",
     donateDescription: "Register as a donor and help save a life.",
+    initiativeLabel: "An initiative by Lions Club",
+    sponsorLabel: "Sponsored by Shubhada Pharma",
   },
   search: {
     s1: {

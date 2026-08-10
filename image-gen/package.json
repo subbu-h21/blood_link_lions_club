@@ -1,0 +1,10 @@
+{
+  "name": "blood-donor-search-image-gen",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Isolated, throwaway tool for generating illustrative hero/section art via OpenRouter's Image API. Not part of the Next.js app in frontend/ - nothing here is imported by it. Zero npm dependencies (uses Node's built-in fetch).",
+  "type": "module",
+  "scripts": {
+    "generate": "node --env-file=.env generate.mjs"
+  }
+}
