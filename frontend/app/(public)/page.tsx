@@ -75,7 +75,7 @@ export default async function Home() {
             fill
             priority
             sizes="(min-width: 1024px) 55vw, 100vw"
-            className="object-contain object-bottom object-right lg:translate-y-5.5"
+            className="object-contain object-bottom object-right lg:translate-y-5"
           />
         </div>
       </section>
