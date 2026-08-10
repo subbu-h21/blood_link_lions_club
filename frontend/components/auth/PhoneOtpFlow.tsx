@@ -187,8 +187,20 @@ export function PhoneOtpFlow({
   async function resend() {
     if (cooldown > 0) return;
     setCooldown(RESEND_COOLDOWN_SECONDS);
-    const supabase = createClient();
-    await supabase.auth.signInWithOtp({ phone: COUNTRY_CODE + phone });
+    try {
+      const supabase = createClient();
+      // Real bug, found 2026-08-10 during pre-launch review: this used to
+      // ignore the result entirely - a resend that failed (rate-limited,
+      // Twilio error, network blip) still started the 30s cooldown with
+      // zero feedback, so the user waited it out for a code that was
+      // never coming. Same error surface sendOtp() already has.
+      const { error } = await supabase.auth.signInWithOtp({ phone: COUNTRY_CODE + phone });
+      if (error) {
+        setOtpError(t("phoneOtp.sendError"));
+      }
+    } catch {
+      setOtpError(t("phoneOtp.sendError"));
+    }
   }
 
   if (step === "checking") {

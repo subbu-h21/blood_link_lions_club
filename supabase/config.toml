@@ -224,7 +224,14 @@ password_requirements = ""
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
 email_sent = 2
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
-sms_sent = 30
+# This is PROJECT-WIDE, not per-user/per-IP (confirmed against Supabase's
+# own rate-limits docs, 2026-08-10 pre-launch review) - the default of 30
+# meant the entire site could send at most 30 OTPs/hour, total, across
+# every donor registering and every request being raised combined. Raised
+# to 100 for real headroom against the 100-200 users/day launch target
+# while still capping worst-case Twilio spend if this endpoint is abused
+# (project owner's own explicit choice, not guessed).
+sms_sent = 100
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
 anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
@@ -292,7 +299,7 @@ enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
-template = "Your code is {{ `{{ .Code }}` }}"
+template = "Your code is {{ .Code }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
 max_frequency = "5s"
 
@@ -344,10 +351,13 @@ enabled = true
 # (fixed 2026-08-10 - was a literal SID, sitting in git history since 2026-08-07;
 # see prompts/61-launch-infrastructure.md's "Twilio SID" note for the fix-forward decision.)
 account_sid = "env(SUPABASE_AUTH_SMS_TWILIO_ACCOUNT_SID)"
-# TODO: replace once a Messaging Service is created in the Twilio console
-# (Messaging > Services > Create Messaging Service, attach a number) -
-# still the placeholder until then, real SMS sends will fail with this value.
-message_service_sid = "test_service_sid"
+# Real Messaging Service, created 2026-08-10 (Local/10DLC sender,
+# +13509008471) - A2P 10DLC brand/campaign registration is NOT required
+# since this project only ever sends to India, never to US numbers
+# (confirmed via Twilio's own docs: "A2P 10DLC registration isn't
+# required to send messages outside of the United States",
+# twilio.com/docs/messaging/tutorials/send-messages-with-messaging-services).
+message_service_sid = "MGa462cda870bd750c54085960230cee5a"
 # DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
 auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 
@@ -366,7 +376,7 @@ verify_enabled = false
 enroll_enabled = false
 verify_enabled = false
 otp_length = 6
-template = "Your code is {{ `{{ .Code }}` }}"
+template = "Your code is {{ .Code }}"
 max_frequency = "5s"
 
 # Configure MFA via WebAuthn
