@@ -303,10 +303,12 @@ template = "Your code is {{ .Code }}"
 # Controls the minimum amount of time that must pass before sending another sms otp.
 max_frequency = "5s"
 
-# No SMS provider is configured (PRD.md §15 item 6, still undecided - see
-# prompts/README.md "Blocking on real data"). Local dev/testing uses fixed
-# test numbers instead of sending real SMS - swap for a real provider
-# section (e.g. [auth.sms.twilio], enabled = true) once one is chosen.
+# Twilio is configured and proven working (2026-08-10 - real end-to-end
+# send/deliver/verify test against a real Indian number, see
+# prompts/README.md). Local dev/testing still uses these fixed test
+# numbers so routine local testing doesn't burn real SMS sends -
+# [auth.sms.test_otp] always short-circuits before Twilio's API is
+# called, for any number in this list.
 [auth.sms.test_otp]
 "+919900000001" = "123456"
 "+919900000002" = "123456"
