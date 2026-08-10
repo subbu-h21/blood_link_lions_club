@@ -187,6 +187,7 @@ export type Dictionary = {
     adminDescription: string;
     searchSectionTitle: string;
     searchSectionSubtitle: string;
+    staffSectionTitle: string;
   };
   qrLanding: {
     eyebrow: string;
@@ -942,11 +943,11 @@ const en: Dictionary = {
     heading: "Blood, when it matters most.",
     subtitle:
       "Find blood banks and donors near you, register to donate, or coordinate as a volunteer — all in one place.",
-    findBloodTitle: "Find blood",
+    findBloodTitle: "Find blood bank",
     findBloodDescription: "Search blood banks and available donors near your location.",
     raiseRequestTitle: "Raise a request",
     raiseRequestDescription: "Couldn't find blood, or need it urgently? Raise a request directly.",
-    donorTitle: "Donor",
+    donorTitle: "Become a donor",
     donorDescription: "Register as a donor or check your pledge and donation history.",
     bankTitle: "Blood bank",
     bankDescription: "Sign in to manage stock levels and incoming requests.",
@@ -954,6 +955,7 @@ const en: Dictionary = {
     adminDescription: "Sign in to coordinate requests across the district.",
     searchSectionTitle: "Search directly",
     searchSectionSubtitle: "Enter a location and blood group to see who can help right now.",
+    staffSectionTitle: "Blood bank & admin sign-in",
   },
   qrLanding: {
     eyebrow: "Uttara Kannada · Lions Club initiative",
