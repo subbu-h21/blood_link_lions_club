@@ -62,17 +62,20 @@ export default async function Home() {
           </svg>
         </div>
 
-        {/* Anchor the transparent artwork to the lower-right edge on wide
-            screens. Flipping it moves the cropped forearm to the viewport
-            edge, so the composition feels intentionally full-bleed. */}
-        <div className="relative mx-auto aspect-[5/6] w-full max-w-[34rem] lg:absolute lg:right-[min(0px,calc((100vw-72rem)/-2))] lg:bottom-0 lg:h-[min(55rem,92vh)] lg:w-[min(60rem,62vw)] lg:max-w-none">
+        {/* The new artwork already carries the arm in from the right, so it
+            can sit naturally against the viewport edge without cropping,
+            flipping, or artificial offsets.
+            `hidden lg:block` - project owner asked for this hand/bag
+            artwork to appear on large (PC) screens only, staying out of
+            the layout entirely below `lg` rather than just shrinking. */}
+        <div className="relative mx-auto hidden aspect-[5/6] w-full max-w-[34rem] lg:absolute lg:block lg:right-[min(0px,calc((100vw-72rem)/-2))] lg:bottom-0 lg:h-[min(55rem,92vh)] lg:w-[min(60rem,62vw)] lg:max-w-none">
           <Image
-            src="https://res.cloudinary.com/dssvyl2zn/image/upload/v1786372742/blood-link-hero-bag.png"
+            src="https://res.cloudinary.com/dssvyl2zn/image/upload/v1786384854/blood-link-hero-whole-blood.png"
             alt={t.heroImageAlt}
             fill
             priority
             sizes="(min-width: 1024px) 55vw, 100vw"
-            className="object-contain object-bottom object-right translate-x-[14vw] lg:translate-x-[calc(14vw+12rem)] -scale-x-100"
+            className="object-contain object-bottom object-right lg:translate-y-5.5"
           />
         </div>
       </section>
