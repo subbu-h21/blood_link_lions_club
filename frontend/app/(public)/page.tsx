@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { FadeImage } from "@/components/media/FadeImage";
 import { SearchForm } from "@/components/search/SearchForm";
 import { getPincodeOptions } from "@/lib/actions/search";
 import { dictionaries, getServerLocale } from "@/lib/i18n/locale";
@@ -24,7 +24,7 @@ export default async function Home() {
     <main className="flex flex-1 flex-col overflow-x-clip">
       <section className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 overflow-hidden px-4 pt-14 pb-10 sm:pt-20 lg:min-h-[calc(100svh-5rem)] lg:grid-cols-[1fr_1.15fr] lg:gap-12 lg:overflow-visible">
         <div className="flex flex-col items-center gap-6 text-center lg:translate-y-[-4rem] lg:items-start lg:text-left">
-          <Image src="/lions-club-logo.webp" alt="Lions Club International" width={72} height={67} priority />
+          <FadeImage src="/lions-club-logo.webp" alt="Lions Club International" width={72} height={67} priority />
           <span className="rounded-full bg-blood-50 px-4 py-1.5 text-sm font-medium text-blood-600">
             {t.eyebrow}
           </span>
@@ -69,7 +69,7 @@ export default async function Home() {
             artwork to appear on large (PC) screens only, staying out of
             the layout entirely below `lg` rather than just shrinking. */}
         <div className="relative mx-auto hidden aspect-[5/6] w-full max-w-[34rem] lg:absolute lg:block lg:right-[min(0px,calc((100vw-72rem)/-2))] lg:bottom-0 lg:h-[min(55rem,92vh)] lg:w-[min(60rem,62vw)] lg:max-w-none">
-          <Image
+          <FadeImage
             src="https://res.cloudinary.com/dssvyl2zn/image/upload/v1786384854/blood-link-hero-whole-blood.png"
             alt={t.heroImageAlt}
             fill

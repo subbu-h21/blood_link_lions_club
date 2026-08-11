@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { Fraunces, Inter, Geist_Mono } from "next/font/google";
+import { FadeImage } from "@/components/media/FadeImage";
 import { LanguageToggle } from "@/components/i18n/LanguageToggle";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { dictionaries, getServerLocale } from "@/lib/i18n/locale";
@@ -46,7 +46,7 @@ export default async function RootLayout({
         <LocaleProvider initialLocale={locale}>
           <header className="flex items-center justify-between border-b border-ink-100 px-4 py-3 sm:px-6">
             <Link href="/" className="flex items-center gap-2.5">
-              <Image src="/lions-club-logo.webp" alt="" width={36} height={34} className="h-8 w-auto sm:h-9" priority />
+              <FadeImage src="/lions-club-logo.webp" alt="" width={36} height={34} className="h-8 w-auto sm:h-9" priority />
               <span className="font-display text-lg  tracking-tight text-ink-900">
                 {header.brandName}
               </span>
