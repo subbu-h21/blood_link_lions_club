@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "sync": "node --env-file=.env --experimental-websocket src/sync.mjs",
+    "sync": "node --env-file-if-exists=.env --experimental-websocket src/sync.mjs",
     "postinstall": "playwright install --with-deps chromium"
   },
   "dependencies": {
