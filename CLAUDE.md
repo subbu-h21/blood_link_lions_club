@@ -83,6 +83,16 @@ Everything else stays server-only: `.from()`, `.rpc()`, `.storage`, and any quer
 
 The line is the service, not the SDK. Auth API = allowed. PostgREST and Storage = server-only.
 
+### Rule 9 clarification — `eraktkosh-sync/` (added 2026-08-17)
+
+`eraktkosh-sync/` (a standalone tool, sibling to `frontend/`, its own `package.json` and dependencies — see its own `README.md`) plus `.github/workflows/eraktkosh-sync.yml` are a deliberate, narrow, **temporary** exception to this rule, not a silent one. They exist to keep `bank_stock` fresh automatically instead of relying only on manual bank-staff entry — see the Out of scope section below for why this was previously ruled out, and `FUTURE-WORK.md`'s own dedicated section for the full story.
+
+Why this counts as an exception and not a violation: it's a real headless browser (Playwright) run on a schedule outside this app entirely, because e-RaktKosh's public stock page has no plain HTTP endpoint to call — confirmed live, its data request is built from an obfuscated client-side payload. That doesn't fit inside a Vercel serverless function, so it runs on GitHub Actions instead, authenticating to Supabase directly with the service role key (same trust level as this app's own server-side code, never reaching a browser).
+
+**Meant to be replaced, not extended.** The real fix is e-RaktKosh's own official APISetu/UMANG API — structured JSON, no browser needed — currently blocked on the project owner obtaining API access (a platform-level approval plus a publisher-issued Authorisation Letter, both in progress as of 2026-08-17, no fixed timeline). `eraktkosh-sync/src/scrape-source.mjs` is written behind a `fetchDistrictStock()` adapter interface specifically so swapping to a real `api-source.mjs` later is a one-file change, not a rewrite — see that package's own `README.md`. Don't build a second scraper-shaped tool elsewhere in this codebase on the strength of this precedent; ask first, same as this one was asked about before being built.
+
+The atomic-upsert design (`upsert_bank_stock_if_newer`, migration `20260817020000_bank_stock_atomic_external_sync_upsert.sql`) is the one piece of this worth reusing as a pattern regardless of source: writing to a timestamped table from more than one place needs the "is this actually newer?" comparison to happen atomically in the database (an `ON CONFLICT DO UPDATE ... WHERE` guard), not as a client-side read-then-write — a real TOCTOU race was found and fixed this way, see that migration's own header comment.
+
 ---
 
 ## Domain vocabulary
@@ -152,7 +162,9 @@ Self-service "forgot password" shipped 2026-08-07 for `bank_staff`/`admin`/`coor
 
 Do not build these. Each is a deliberate decision recorded in `SPEC.md`. If a task seems to require one, stop and ask.
 
-Automatic widening to adjacent regions · `donor_on_the_way` tracking · GPS, maps, distance sorting · in-app chat · automated eligibility screening · e-RaktKosh integration · platelets and plasma · donor reliability ranking · masked calling · native apps · camps management · payments or incentives of any kind · offline mode
+Automatic widening to adjacent regions · `donor_on_the_way` tracking · GPS, maps, distance sorting · in-app chat · automated eligibility screening · ~~e-RaktKosh integration~~ · platelets and plasma · donor reliability ranking · masked calling · native apps · camps management · payments or incentives of any kind · offline mode
+
+**e-RaktKosh integration was revisited 2026-08-17, deliberately, not a silent divergence** — the project owner asked directly for automated `bank_stock` freshness instead of relying only on manual bank-staff entry, which is exactly `SPEC.md` item I6's own revisit trigger ("manual entry decays"). See the Rule 9 clarification above and `FUTURE-WORK.md`'s own dedicated section for what was actually built (a temporary bridge, not the real integration) and what's still open.
 
 ---
 
