@@ -62,7 +62,20 @@ export function createScrapeSource() {
       const browser = await chromium.launch();
       try {
         const page = await browser.newPage();
-        await page.goto(STOCK_URL, { waitUntil: "networkidle", timeout: 45000 });
+        // "networkidle" (wait for ALL network activity to stop) is what
+        // this originally used, and it worked reliably testing locally -
+        // but it timed out consistently once run for real on GitHub
+        // Actions (found live, 2026-08-17, not theorized): a runner
+        // geographically far from this Indian government server, plus
+        // whatever background polling/analytics the page itself may run,
+        // can mean network traffic never fully quiets down within any
+        // reasonable timeout. Playwright's own guidance is to avoid
+        // "networkidle" for exactly this reason - wait for the actual DOM
+        // to be ready instead, then explicitly wait for the one element
+        // this tool actually needs (the state dropdown), which is robust
+        // regardless of what else the page is doing in the background.
+        await page.goto(STOCK_URL, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.locator("select").first().waitFor({ state: "visible", timeout: 30000 });
 
         await page.locator("select").first().selectOption({ label: state });
         await page.waitForTimeout(1200); // district <select> repopulates via its own AJAX call
