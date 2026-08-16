@@ -87,6 +87,17 @@ out of scope for this task. You should make these edits yourself.
    assign/unassign) inline - not a separate feature from A2, the same
    `getAdminRequestDetail`/`assignProspectToBank` functions power both
    surfaces.
+8. **`SPEC.md`'s §7 (or wherever the "deliberately ignored" table lives)
+   item I6, "e-RaktKosh / automated stock sync," is stale as of
+   2026-08-17.** Its own revisit trigger ("Tier 1 proves valuable and
+   manual entry decays") fired - the project owner asked directly for
+   automated `bank_stock` freshness. Its own text still reads as purely
+   hypothetical/deferred; it should note this was revisited and built as
+   a temporary bridge (`eraktkosh-sync/`, pending the real e-RaktKosh API).
+   See `CLAUDE.md`'s "Rule 9 clarification" and Out of scope section, and
+   `FUTURE-WORK.md`'s own dedicated section, for the current, accurate
+   state - don't trust I6's own row in `SPEC.md` without cross-checking
+   those first.
 
 ---
 
@@ -4672,6 +4683,22 @@ commit from 2026-08-09 onward is a real, contemporaneous commit again.
 Entered as a genuine one-time snapshot (`bank_stock.updated_by = null`, `updated_at` = the real e-RaktKosh "Last Updated" timestamp, not "now") - explicitly not a migration/seed change, since real stock is meant to go stale and eventually be superseded by the bank's own portal entries, not be re-applied on every fresh environment.
 
 **5 new pincodes added** (`581403` Sirsi/Nilekani S.O, `581302`/`581303`/`581304`/`581308` Karwar), each cross-checked against India Post's public directory (`api.postalpincode.in`) before insertion - a 6th requested pincode (`581404`) was confirmed **not to exist** in India Post's directory at all and correctly left out at the project owner's own call once shown the discrepancy, not silently inserted.
+
+## e-RaktKosh automated stock sync (2026-08-17) — written live, same session as the work
+
+**Deliberate revisit of `SPEC.md` item I6, asked for directly by the project owner** ("you can't rely on blood bank staffs alone to update things on time"), not scope creep - see `CLAUDE.md`'s Out of scope section and its new "Rule 9 clarification," and `FUTURE-WORK.md`'s own dedicated section, for the full standing writeup. This entry is the chronological account of how it was built.
+
+**Two data sources investigated before writing any code, real findings not assumptions:** the official e-RaktKosh API (via APISetu/UMANG) exists and is real, but has no self-serve auth in its own published spec - initially (wrongly) called this a dead end, then corrected after the project owner pushed back: a live probe of APISetu's own `subscriptionlog` endpoint showed real external consumers already subscribed to this exact collection, proving it's a genuine multi-tenant subscription model, not UMANG-exclusive. The project owner has since registered as a consumer on `partners.apisetu.gov.in` (under "Shubhada Health," his father's pharmacy business - deliberately confirmed with him this was intentional, not an accident of being logged in) and submitted the Part 1 platform approval (~5 working days per API Setu's own SOP). Part 2 (subscribing to eRaktKosh's specific collection) needs an Authorisation Letter from C-DAC first - a real, human, outside-the-portal step; contact details and a draft request email were prepared, sending is on the project owner.
+
+**Since API access has no fixed timeline, built a temporary bridge instead of blocking on it:** `eraktkosh-sync/`, a standalone tool (sibling to `frontend/`, own `package.json`, nothing imported by the Next.js app - same pattern as `image-gen/`) that drives a real headless browser against e-RaktKosh's *public* stock page (no plain HTTP endpoint exists - confirmed live, its result table is built from an obfuscated client-side request), on a 4-hour GitHub Actions cron. Deliberately written behind a `fetchDistrictStock()` adapter interface so swapping in a real `api-source.mjs` later, once API access comes through, is a one-file change - see that package's own `README.md`.
+
+**A real, non-obvious correctness catch while building the blood-group parser:** e-RaktKosh's own dropdown lists 10 blood groups, not 8 - the usual AB/A/B/O × ± eight, plus `Oh+`/`Oh-` (the Bombay phenotype, a genuinely different blood type, not interchangeable with standard O group in transfusion medicine despite the similar name). This schema's compatibility table is red-cells-only among the 8 standard groups (PRD.md §4.7) - `Oh` figures are deliberately skipped and logged, never folded into O+/O-, which would have been a real transfusion-safety bug disguised as a data-mapping simplification.
+
+**A real race condition found and fixed, not shipped as "probably fine."** The project owner asked directly whether the sync tool and the live app writing to `bank_stock` simultaneously could conflict. The honest answer: the database layer itself was never at risk (Postgres's own row-level locking + the existing `(bank_id, blood_group, component)` unique constraint handle concurrent upserts correctly regardless), but the sync's original design read current stock once, decided what to overwrite from that snapshot, then wrote moments later - a bank-staff save landing in that gap could have been silently overwritten by older external data, exactly the failure "most recent wins" was supposed to prevent. Fixed with a new Postgres function (`upsert_bank_stock_if_newer`, migration `20260817020000_bank_stock_atomic_external_sync_upsert.sql`) that does the newer-than comparison atomically inside the `INSERT ... ON CONFLICT DO UPDATE ... WHERE` clause itself - the decision now happens at the instant of the write, not from a stale snapshot. Real testing against a disposable local Postgres (not this project's database) caught a genuine bug before it ever shipped: the function's own output-parameter names collided with `bank_stock`'s real column names, making the `ON CONFLICT` target ambiguous and failing on *every* call - fixed by renaming the output columns, invisible to the one caller that used them.
+
+**Verified for real at every layer, not just by inspection - the project owner explicitly asked for "more comprehensive testing... make sure there is no security risk" and this is what was actually done, not a summary of intentions:** a disposable Docker Postgres proved the atomic guard and the race-condition fix directly (a fresh write survived an older one arriving after it); a full local Supabase reset (`npx supabase db reset`, all 24 migrations + seed replayed) proved the migration applies cleanly against the real history; a genuine live scrape-and-write against that local stack matched, row for row, figures independently captured earlier the same session, including a correct IST→UTC timestamp conversion; a second identical run proved idempotency (0 applied, nothing rewritten); a real HTTP POST to the live local API using the real `anon` key proved the privilege lockdown holds at the actual gateway, not just in a Postgres shell (`401`, not a partial write); and a batch of one malformed row plus one otherwise-valid row proved the whole batch rolls back together, no partial writes ever possible, including a payload shaped like a SQL-injection attempt (`units: "DROP TABLE bank_stock;"`) that was correctly rejected as bad input, never executed. The real `security-review` skill was run against the full diff: 0 blockers, 1 non-security WARNING (an untestable defensive code path - can't safely simulate a real e-RaktKosh markup change against the live site), everything else PASSED with concrete evidence, not assumption.
+
+**Not yet done, as of this entry:** the real *production* run (local dev only so far, deliberately), the two GitHub Actions secrets (only the project owner can set these), and committing/pushing this work at all - nothing in `eraktkosh-sync/`, the new migration, or `.github/` is in git yet, per the project owner's own standing rule not to commit without being asked.
 
 ---
 

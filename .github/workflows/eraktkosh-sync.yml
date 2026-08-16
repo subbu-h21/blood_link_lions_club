@@ -1,0 +1,35 @@
+name: e-RaktKosh stock sync
+
+# Temporary bridge until real APISetu/UMANG API credentials for e-RaktKosh
+# come through - see eraktkosh-sync/README.md for the full story. Runs
+# outside Vercel deliberately: this needs a real headless browser, which
+# doesn't fit well inside a Vercel serverless function.
+on:
+  schedule:
+    # Every 4 hours (confirmed frequency, 2026-08-17). Cron is UTC.
+    - cron: "0 */4 * * *"
+  workflow_dispatch: {} # manual trigger, e.g. right after adding a new bank matcher
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: eraktkosh-sync
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: eraktkosh-sync/package-lock.json
+
+      - run: npm ci
+        # postinstall (playwright install --with-deps chromium) runs as
+        # part of this step.
+
+      - run: npm run sync
+        env:
+          SUPABASE_URL: ${{ secrets.ERAKTKOSH_SYNC_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.ERAKTKOSH_SYNC_SUPABASE_SECRET_KEY }}
