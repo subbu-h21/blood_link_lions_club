@@ -215,6 +215,7 @@ export type Dictionary = {
       componentLabel: string;
       componentWholeBlood: string;
       regionConfirm: string;
+      searching: string;
       searchButton: string;
     };
     s2: {
@@ -987,6 +988,7 @@ const en: Dictionary = {
       componentLabel: "Component",
       componentWholeBlood: "Whole blood",
       regionConfirm: "Region: {region}",
+      searching: "Searching blood banks in {location}…",
       searchButton: "Search",
     },
     s2: {

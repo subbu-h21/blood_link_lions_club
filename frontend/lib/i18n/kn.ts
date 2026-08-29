@@ -218,6 +218,7 @@ const kn: Dictionary = {
       componentLabel: "ಘಟಕ",
       componentWholeBlood: "ಸಂಪೂರ್ಣ ರಕ್ತ",
       regionConfirm: "ಪ್ರದೇಶ: {region}",
+      searching: "{location} ನಲ್ಲಿ ರಕ್ತ ಬ್ಯಾಂಕ್‌ಗಳನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ…",
       searchButton: "ಹುಡುಕಿ",
     },
     s2: {
