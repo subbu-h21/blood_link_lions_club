@@ -12,41 +12,65 @@ const COMPONENT = "whole_blood";
 /**
  * S1 · Search (PRD.md §6.1), `/`. No auth anywhere (CLAUDE.md rule 6) -
  * this is the entire point of tier 1. `pincodeOptions` comes from a
- * server-side fetch (app/(public)/page.tsx) for the datalist; resolution
- * itself happens on blur via resolveLocationAction (Unit 14's real
- * pincodes lookup), not per-keystroke - shows the region confirmation
- * PRD.md describes before the separate, explicit "Search" action.
+ * server-side fetch (app/(public)/page.tsx) for the datalist.
+ *
+ * Resolution used to happen on blur, before the Search click - moved
+ * entirely into the Search action itself (2026-08-29, user-reported UX
+ * issue): blur-triggered resolution felt inconsistent ("have to click
+ * outside the box"), and the actual `router.push` navigation afterward
+ * had zero feedback for however long the destination page's own
+ * server-side fetch took, looking like the click did nothing. Now typing
+ * does nothing but update the field; clicking Search runs the whole
+ * checking-region -> not-found-or-searching sequence with visible
+ * feedback at each step. `phase` replaces the old separate
+ * resolved/resolving/noMatch booleans - only one of these states is ever
+ * true at a time, so one variable is more honest about the state shape
+ * than three that could (in the old code) never actually go out of sync
+ * but had no type-level guarantee of that.
+ *
+ * `resolving`/`noMatch` (lib/i18n) are reused as-is, not renamed - the
+ * sibling S4 raise-a-request flow (RaiseRequestFlow.tsx) uses the exact
+ * same two keys for its own, unrelated, still-blur-based resolution UI;
+ * changing the strings here would have silently changed that flow's
+ * wording too. Only `searching` is new, since S4 has no equivalent
+ * "navigating to a results page" step to word.
  */
+type SearchPhase = "idle" | "checking" | "not-found" | "searching";
+
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin text-ink-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  );
+}
+
 export function SearchForm({ pincodeOptions }: { pincodeOptions: PincodeOption[] }) {
   const { t } = useTranslation();
   const router = useRouter();
   const [location, setLocation] = useState("");
   const [bloodGroup, setBloodGroup] = useState<BloodGroup>(BLOOD_GROUPS[0]);
-  const [resolved, setResolved] = useState<ResolvedLocation | null>(null);
-  const [resolving, setResolving] = useState(false);
-  const [noMatch, setNoMatch] = useState(false);
+  const [phase, setPhase] = useState<SearchPhase>("idle");
 
-  async function resolve() {
-    if (!location.trim()) {
-      setResolved(null);
-      setNoMatch(false);
+  async function handleSearch() {
+    const trimmed = location.trim();
+    if (!trimmed) return;
+
+    setPhase("checking");
+    const result: ResolvedLocation | null = await resolveLocationAction(trimmed);
+    if (!result) {
+      setPhase("not-found");
       return;
     }
-    setResolving(true);
-    const result = await resolveLocationAction(location);
-    setResolving(false);
-    setResolved(result);
-    setNoMatch(!result);
-  }
 
-  function search() {
-    if (!resolved) return;
+    setPhase("searching");
     const params = new URLSearchParams({
-      regionId: resolved.regionId,
-      region: resolved.regionName,
+      regionId: result.regionId,
+      region: result.regionName,
       bloodGroup,
       component: COMPONENT,
-      location,
+      location: trimmed,
     });
     router.push(`/search?${params.toString()}`);
   }
@@ -62,10 +86,8 @@ export function SearchForm({ pincodeOptions }: { pincodeOptions: PincodeOption[]
           value={location}
           onChange={(e) => {
             setLocation(e.target.value);
-            setResolved(null);
-            setNoMatch(false);
+            if (phase !== "idle") setPhase("idle");
           }}
-          onBlur={resolve}
           placeholder={t("search.s1.locationPlaceholder")}
           className="rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-base font-normal text-ink-900 outline-none transition focus:border-blood-500 focus:ring-2 focus:ring-blood-100"
         />
@@ -104,17 +126,25 @@ export function SearchForm({ pincodeOptions }: { pincodeOptions: PincodeOption[]
           <option value={COMPONENT}>{t("search.s1.componentWholeBlood")}</option>
         </select>
       </label>
-      {resolving && <p className="text-sm text-ink-500">{t("search.s1.resolving")}</p>}
-      {resolved && (
-        <p className="rounded-lg bg-banyan-100 px-3 py-2 text-sm text-banyan-700">
-          {t("search.s1.regionConfirm").replace("{region}", resolved.regionName)}
-        </p>
-      )}
-      {noMatch && <p className="text-sm text-blood-600">{t("search.s1.noMatch")}</p>}
+      <div aria-live="polite">
+        {phase === "checking" && (
+          <p className="flex items-center gap-2 text-sm text-ink-500">
+            <Spinner />
+            {t("search.s1.resolving")}
+          </p>
+        )}
+        {phase === "searching" && (
+          <p className="flex items-center gap-2 text-sm text-ink-500">
+            <Spinner />
+            {t("search.s1.searching").replace("{location}", location.trim())}
+          </p>
+        )}
+        {phase === "not-found" && <p className="text-sm text-blood-600">{t("search.s1.noMatch")}</p>}
+      </div>
       <button
         type="button"
-        onClick={search}
-        disabled={!resolved || resolving}
+        onClick={handleSearch}
+        disabled={!location.trim() || phase === "checking" || phase === "searching"}
         className="mt-1 rounded-full bg-blood-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blood-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {t("search.s1.searchButton")}
